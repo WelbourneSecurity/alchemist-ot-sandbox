@@ -440,6 +440,12 @@ function TopologyCanvasInner({
             </div>
           ) : null}
         </aside>
+        {project.assets.length === 0 ? (
+          <div className="canvas-empty">
+            <strong>Empty topology</strong>
+            <p>Drag an asset from the palette onto a Purdue zone to begin, or load the Sample project from the header.</p>
+          </div>
+        ) : null}
         <ReactFlow
           nodes={flowNodes}
           edges={[]}

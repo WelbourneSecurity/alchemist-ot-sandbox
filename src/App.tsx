@@ -10,9 +10,12 @@ import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { PrintableReport } from "./components/PrintableReport";
+import { ToastViewport } from "./components/ToastViewport";
 import { TopologyCanvas } from "./components/TopologyCanvas";
+import { useToasts } from "./hooks/useToasts";
 
 const STORAGE_KEY = "alchemist-ot-sandbox-project";
 const HISTORY_LIMIT = 30;
@@ -121,6 +124,8 @@ export function App() {
     }
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -318,16 +323,49 @@ export function App() {
       reader.onload = () => {
         const result = parseProjectJson(String(reader.result ?? ""));
         if (!result.ok) {
-          window.alert(`Import failed:\n${result.errors.join("\n")}`);
+          pushToast(`Import failed: ${result.errors.join("; ")}`, "danger");
           return;
         }
         commitProject(result.project);
         setSelectedId(null);
+        pushToast("Project imported", "success");
       };
+      reader.onerror = () => pushToast("Could not read that file", "danger");
       reader.readAsText(file);
     },
-    [commitProject]
+    [commitProject, pushToast]
   );
+
+  const handleExportJson = useCallback(() => {
+    downloadJson(project.name, serializeProject(project));
+    pushToast("Exported project JSON", "success");
+  }, [project, pushToast]);
+
+  const handleExportSvg = useCallback(() => {
+    downloadTopologySvg(project, assessment);
+    pushToast("Exported topology SVG", "success");
+  }, [project, assessment, pushToast]);
+
+  const handleLoadSample = useCallback(() => {
+    commitProject(cloneProject(sampleProject));
+    setSelectedId(null);
+    pushToast("Sample project loaded", "info");
+  }, [commitProject, pushToast]);
+
+  const handleNewBlank = useCallback(() => {
+    commitProject(cloneProject(blankProject));
+    setSelectedId(null);
+    pushToast("Blank project created", "info");
+  }, [commitProject, pushToast]);
+
+  const confirmDelete = useCallback(() => {
+    if (!pendingDelete) {
+      return;
+    }
+    removeSelected();
+    pushToast(`Deleted ${pendingDelete.label}`, "info");
+    setPendingDelete(null);
+  }, [pendingDelete, removeSelected, pushToast]);
 
   return (
     <>
@@ -340,11 +378,11 @@ export function App() {
           canRedo={future.length > 0}
           onProjectNameChange={(name) => commitProject((current) => ({ ...current, name }))}
           onImport={importProject}
-          onExportJson={() => downloadJson(project.name, serializeProject(project))}
-          onExportSvg={() => downloadTopologySvg(project, assessment)}
+          onExportJson={handleExportJson}
+          onExportSvg={handleExportSvg}
           onPrintReport={() => window.print()}
-          onLoadSample={() => commitProject(cloneProject(sampleProject))}
-          onNewBlank={() => commitProject(cloneProject(blankProject))}
+          onLoadSample={handleLoadSample}
+          onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
           onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
@@ -384,7 +422,12 @@ export function App() {
             conduit={selectedConduit}
             onAssetChange={updateAsset}
             onConduitChange={updateConduit}
-            onDeleteSelected={removeSelected}
+            onDeleteSelected={() => {
+              if (!selectedId) {
+                return;
+              }
+              setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
+            }}
             onConfirmSelected={confirmSelection}
           />
           <AnalysisPanel
@@ -405,6 +448,21 @@ export function App() {
       </main>
 
       <PrintableReport project={project} assessment={assessment} reachability={reachability} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete from topology"
+        message={
+          pendingDelete
+            ? `Remove ${pendingDelete.label}? Any connected conduits are removed too. You can undo this.`
+            : ""
+        }
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }
