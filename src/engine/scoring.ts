@@ -1,0 +1,445 @@
+import { categoryLabels, getAssetType, getZone, standardReferences } from "../data/catalog";
+import { findReachability } from "./reachability";
+import type { Asset, Conduit, Finding, OtProject, ScoreCategory, SecurityAssessment, Severity } from "../models/types";
+
+const categoryWeights: Record<ScoreCategory, number> = {
+  segmentation: 0.22,
+  remoteAccess: 0.16,
+  identity: 0.14,
+  monitoring: 0.14,
+  resilience: 0.12,
+  legacyExposure: 0.1,
+  safetyImpact: 0.08,
+  documentation: 0.04
+};
+
+const severityDeduction: Record<Severity, number> = {
+  critical: 28,
+  high: 18,
+  medium: 10,
+  low: 5
+};
+
+const legacyProtocols = new Set([
+  "modbus",
+  "modbus tcp",
+  "dnp3",
+  "ftp",
+  "telnet",
+  "snmp v1",
+  "snmpv1",
+  "snmp v2",
+  "snmpv2",
+  "http"
+]);
+
+function scoreBand(score: number): SecurityAssessment["band"] {
+  if (score >= 82) {
+    return "strong";
+  }
+  if (score >= 64) {
+    return "fair";
+  }
+  if (score >= 45) {
+    return "weak";
+  }
+  return "critical";
+}
+
+function stableId(category: ScoreCategory, title: string, seed: string) {
+  return `${category}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${seed}`.replace(/-+/g, "-");
+}
+
+function isControlZone(asset: Asset) {
+  return getZone(asset.zone).riskRank <= 3 || asset.type === "safety-system";
+}
+
+function isRemoteAccessAsset(asset: Asset) {
+  return asset.type === "vendor-remote";
+}
+
+function crossesItToControl(source: Asset, target: Asset) {
+  const sourceRank = getZone(source.zone).riskRank;
+  const targetRank = getZone(target.zone).riskRank;
+  return (sourceRank >= 6 && targetRank <= 3) || (targetRank >= 6 && sourceRank <= 3);
+}
+
+function addFinding(findings: Finding[], finding: Omit<Finding, "id">, seed: string) {
+  findings.push({
+    id: stableId(finding.category, finding.title, seed),
+    ...finding
+  });
+}
+
+function assetName(asset?: Asset) {
+  return asset?.name ?? "Unknown asset";
+}
+
+function conduitName(conduit?: Conduit) {
+  return conduit?.name ?? "Unknown conduit";
+}
+
+function isPastDate(value: string) {
+  if (!value.trim()) {
+    return false;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && parsed < Date.now();
+}
+
+export function assessProject(project: OtProject): SecurityAssessment {
+  const findings: Finding[] = [];
+  const assets = new Map(project.assets.map((asset) => [asset.id, asset]));
+
+  for (const conduit of project.conduits) {
+    const source = assets.get(conduit.source);
+    const target = assets.get(conduit.target);
+    if (!source || !target) {
+      addFinding(
+        findings,
+        {
+          category: "documentation",
+          severity: "high",
+          title: "Conduit references a missing asset",
+          detail: `${conduit.name} points to an asset that is not present in the model.`,
+          remediation: "Remove the conduit or reconnect it to documented source and destination assets.",
+          affectedAssetIds: [],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.isa62443]
+        },
+        conduit.id
+      );
+      continue;
+    }
+
+    if (crossesItToControl(source, target)) {
+      addFinding(
+        findings,
+        {
+          category: "segmentation",
+          severity: "critical",
+          title: "Direct enterprise-to-control conduit",
+          detail: `${conduitName(conduit)} connects ${assetName(source)} and ${assetName(target)} without an IDMZ broker.`,
+          remediation: "Route enterprise or business access through Level 3.5 IDMZ services, proxies, replication, or a controlled jump-host path.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.isa62443]
+        },
+        conduit.id
+      );
+    }
+
+    if (conduit.trustBoundary && conduit.firewallRule === "any-any") {
+      addFinding(
+        findings,
+        {
+          category: "segmentation",
+          severity: "high",
+          title: "Any-any rule across trust boundary",
+          detail: `${conduitName(conduit)} is documented as any-any across a trust boundary.`,
+          remediation: "Replace with least-privilege rules for exact source, destination, protocol, port, and direction.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.isa62443]
+        },
+        conduit.id
+      );
+    }
+
+    if (conduit.trustBoundary && conduit.firewallRule === "unknown") {
+      addFinding(
+        findings,
+        {
+          category: "documentation",
+          severity: "medium",
+          title: "Undocumented boundary rule",
+          detail: `${conduitName(conduit)} crosses a trust boundary but the permit rule is unknown.`,
+          remediation: "Document the exact access rule, owner, business justification, review cadence, and expiry if temporary.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082]
+        },
+        conduit.id
+      );
+    }
+
+    if (conduit.trustBoundary && (!conduit.ruleOwner.trim() || !conduit.businessJustification.trim())) {
+      addFinding(
+        findings,
+        {
+          category: "documentation",
+          severity: "medium",
+          title: "Boundary flow lacks ownership or justification",
+          detail: `${conduitName(conduit)} crosses a trust boundary without a rule owner and business justification.`,
+          remediation: "Assign a rule owner and document why the flow is operationally required before accepting the boundary exposure.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.isa62443]
+        },
+        `${conduit.id}-owner`
+      );
+    }
+
+    if (conduit.temporaryAccess && isPastDate(conduit.expiryDate)) {
+      addFinding(
+        findings,
+        {
+          category: "segmentation",
+          severity: "high",
+          title: "Temporary conduit is past expiry",
+          detail: `${conduitName(conduit)} is marked as temporary access but its expiry date has passed.`,
+          remediation: "Remove the rule, renew it through change control, or replace it with a permanent least-privilege conduit.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082]
+        },
+        `${conduit.id}-expiry`
+      );
+    }
+
+    if (conduit.trustBoundary && (!conduit.inspected || !conduit.logged)) {
+      addFinding(
+        findings,
+        {
+          category: "monitoring",
+          severity: "high",
+          title: "Boundary flow lacks inspection or logging",
+          detail: `${conduitName(conduit)} crosses a trust boundary but is not both inspected and logged.`,
+          remediation: "Enable firewall logging, session logging, IDS/NSM inspection, or another compensating monitoring control for this conduit.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.mitreIcs]
+        },
+        conduit.id
+      );
+    }
+
+    if (conduit.trustBoundary && conduit.direction === "bidirectional") {
+      addFinding(
+        findings,
+        {
+          category: "segmentation",
+          severity: "medium",
+          title: "Bidirectional boundary conduit",
+          detail: `${conduitName(conduit)} permits bidirectional traffic across a trust boundary.`,
+          remediation: "Split the conduit into explicit one-way flows and remove directions that are not operationally required.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.isa62443]
+        },
+        conduit.id
+      );
+    }
+
+    const sourceType = getAssetType(source.type);
+    const targetType = getAssetType(target.type);
+    const engineeringToController =
+      (source.type === "engineering-workstation" && target.type === "plc-rtu") ||
+      (target.type === "engineering-workstation" && source.type === "plc-rtu");
+    if (engineeringToController && conduit.direction === "bidirectional" && !conduit.logged) {
+      addFinding(
+        findings,
+        {
+          category: "identity",
+          severity: "high",
+          title: "Engineering path needs tighter control",
+          detail: `${sourceType.label} to ${targetType.label} access is bidirectional and not centrally logged.`,
+          remediation: "Require jump-host mediation, named accounts, MFA where possible, session recording, and temporary change windows for controller downloads.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.mitreIcs]
+        },
+        conduit.id
+      );
+    }
+
+    const safetyAsset = source.type === "safety-system" ? source : target.type === "safety-system" ? target : undefined;
+    if (safetyAsset && conduit.control !== "data-diode" && conduit.direction === "bidirectional") {
+      addFinding(
+        findings,
+        {
+          category: "safetyImpact",
+          severity: "critical",
+          title: "Safety system has bidirectional control path",
+          detail: `${assetName(safetyAsset)} is connected through a bidirectional conduit without a unidirectional control.`,
+          remediation: "Validate the safety case, prefer read-only or data-diode style integration, and restrict changes to formal safety change control.",
+          affectedAssetIds: [source.id, target.id],
+          affectedConduitIds: [conduit.id],
+          references: [standardReferences.nist80082, standardReferences.isa62443]
+        },
+        conduit.id
+      );
+    }
+  }
+
+  for (const asset of project.assets) {
+    if (isRemoteAccessAsset(asset) && !asset.controls.mfa) {
+      addFinding(
+        findings,
+        {
+          category: "remoteAccess",
+          severity: "critical",
+          title: "Remote access lacks MFA",
+          detail: `${asset.name} is a remote or third-party access point without MFA marked as present.`,
+          remediation: "Require phishing-resistant MFA where practical, named accounts, approval, session recording, and emergency access handling.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: [],
+          references: [standardReferences.nist80082, standardReferences.mitreIcs]
+        },
+        asset.id
+      );
+    }
+
+    if (isRemoteAccessAsset(asset)) {
+      const reachableControlAssets = project.assets.filter((target) => {
+        if (!isControlZone(target)) {
+          return false;
+        }
+        return findReachability(project, asset.id, target.id).reachable;
+      });
+
+      if (reachableControlAssets.length > 0) {
+        const hasJumpPath = project.conduits.some(
+          (conduit) =>
+            conduit.jumpHostRequired &&
+            (conduit.source === asset.id || conduit.target === asset.id || reachableControlAssets.some((target) => conduit.target === target.id))
+        );
+        addFinding(
+          findings,
+          {
+            category: "remoteAccess",
+            severity: hasJumpPath ? "high" : "critical",
+            title: "Remote access can reach control assets",
+            detail: `${asset.name} can reach ${reachableControlAssets.length} Level 2, Level 1, Level 0, or safety asset(s).`,
+            remediation: "Constrain remote support to approved jump hosts, named sessions, limited protocols, maintenance windows, and monitored conduits.",
+            affectedAssetIds: [asset.id, ...reachableControlAssets.map((target) => target.id)],
+            affectedConduitIds: project.conduits.filter((conduit) => conduit.source === asset.id || conduit.target === asset.id).map((conduit) => conduit.id),
+            references: [standardReferences.nist80082, standardReferences.mitreIcs]
+          },
+          asset.id
+        );
+      }
+    }
+
+    if (
+      asset.criticality === "critical" &&
+      (!asset.controls.backups || asset.backupStatus === "missing" || asset.backupStatus === "unknown") &&
+      asset.type !== "field-device"
+    ) {
+      addFinding(
+        findings,
+        {
+          category: "resilience",
+          severity: "high",
+          title: "Critical asset lacks backup evidence",
+          detail: `${asset.name} is critical but backups are not marked as present.`,
+          remediation: "Document recoverable configuration backups, offline copies, restore testing, and owner accountability.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: [],
+          references: [standardReferences.nist80082]
+        },
+        asset.id
+      );
+    }
+
+    if (asset.lifecycleStatus === "obsolete" && isControlZone(asset)) {
+      addFinding(
+        findings,
+        {
+          category: "legacyExposure",
+          severity: asset.criticality === "critical" ? "critical" : "high",
+          title: "Unsupported control-zone asset",
+          detail: `${asset.name} is marked obsolete or unsupported in a control or safety zone.`,
+          remediation: "Reduce exposure, document compensating controls, plan replacement, and verify backups before any change window.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: project.conduits
+            .filter((conduit) => conduit.source === asset.id || conduit.target === asset.id)
+            .map((conduit) => conduit.id),
+          references: [standardReferences.nist80082]
+        },
+        `${asset.id}-lifecycle`
+      );
+    }
+
+    if (!asset.controls.defaultCredentialsDisabled && asset.type !== "field-device") {
+      addFinding(
+        findings,
+        {
+          category: "identity",
+          severity: asset.criticality === "critical" ? "critical" : "high",
+          title: "Default credentials not confirmed disabled",
+          detail: `${asset.name} does not have default credential removal marked as complete.`,
+          remediation: "Remove vendor defaults, disable shared accounts where possible, and document break-glass exceptions.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: [],
+          references: [standardReferences.nist80082, standardReferences.mitreIcs]
+        },
+        asset.id
+      );
+    }
+
+    const legacy = asset.protocols.filter((protocol) => legacyProtocols.has(protocol.trim().toLowerCase()));
+    if (legacy.length > 0 && isControlZone(asset)) {
+      addFinding(
+        findings,
+        {
+          category: "legacyExposure",
+          severity: asset.criticality === "critical" ? "high" : "medium",
+          title: "Legacy or cleartext protocol exposure",
+          detail: `${asset.name} uses ${legacy.join(", ")} in a control or safety zone.`,
+          remediation: "Restrict legacy protocols to necessary peers, inspect at conduits, remove unused services, and prefer secure alternatives where supported.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: project.conduits
+            .filter((conduit) => conduit.source === asset.id || conduit.target === asset.id)
+            .map((conduit) => conduit.id),
+          references: [standardReferences.nist80082, standardReferences.mitreIcs]
+        },
+        `${asset.id}-${legacy.join("-")}`
+      );
+    }
+
+    const missingDocumentation = [asset.ipAddress, asset.vlan, asset.owner].filter((value) => value.trim().length === 0).length;
+    if (missingDocumentation > 0 || asset.protocols.length === 0) {
+      addFinding(
+        findings,
+        {
+          category: "documentation",
+          severity: "low",
+          title: "Asset documentation incomplete",
+          detail: `${asset.name} is missing owner, IP/VLAN, or protocol metadata.`,
+          remediation: "Complete the asset record so ratings and remediation can be traced to responsible owners and allowed services.",
+          affectedAssetIds: [asset.id],
+          affectedConduitIds: [],
+          references: [standardReferences.nist80082]
+        },
+        asset.id
+      );
+    }
+  }
+
+  const categoryScores = Object.keys(categoryWeights).map((categoryKey) => {
+    const category = categoryKey as ScoreCategory;
+    const deductions = findings
+      .filter((finding) => finding.category === category)
+      .reduce((total, finding) => total + severityDeduction[finding.severity], 0);
+    const score = Math.max(0, 100 - deductions);
+    const count = findings.filter((finding) => finding.category === category).length;
+    return {
+      category,
+      label: categoryLabels[category],
+      score,
+      summary: count === 0 ? "No issues detected in the declared model." : `${count} finding${count === 1 ? "" : "s"} requiring review.`
+    };
+  });
+
+  const overallScore = Math.round(
+    categoryScores.reduce((total, category) => total + category.score * categoryWeights[category.category], 0)
+  );
+
+  return {
+    overallScore,
+    band: scoreBand(overallScore),
+    categoryScores,
+    findings: findings.sort((a, b) => severityDeduction[b.severity] - severityDeduction[a.severity]),
+  };
+}
