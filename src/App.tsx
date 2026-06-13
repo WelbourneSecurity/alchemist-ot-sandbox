@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
 import { assetYForZone, inferZoneFromY, snapAssetPosition, snapPointToZone } from "./data/canvasLayout";
@@ -10,11 +10,13 @@ import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
+import { CollapsedRail } from "./components/CollapsedRail";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { PrintableReport } from "./components/PrintableReport";
 import { ToastViewport } from "./components/ToastViewport";
 import { TopologyCanvas } from "./components/TopologyCanvas";
+import { usePanelLayout } from "./hooks/usePanelLayout";
 import { useToasts } from "./hooks/useToasts";
 
 const STORAGE_KEY = "alchemist-ot-sandbox-project";
@@ -126,6 +128,7 @@ export function App() {
   });
   const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
+  const { layout, togglePalette, toggleInspector, setDockHeight } = usePanelLayout();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -388,8 +391,18 @@ export function App() {
           onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         />
 
-        <section className="workspace-grid" aria-label="OT network sandbox workspace">
-          <AssetPalette onAddAsset={addAsset} />
+        <section
+          className={`workspace-grid${layout.paletteOpen ? "" : " palette-collapsed"}${
+            layout.inspectorOpen ? "" : " inspector-collapsed"
+          }`}
+          style={{ "--dock-height": `${layout.dockHeight}rem` } as CSSProperties}
+          aria-label="OT network sandbox workspace"
+        >
+          {layout.paletteOpen ? (
+            <AssetPalette onAddAsset={addAsset} onCollapse={togglePalette} />
+          ) : (
+            <CollapsedRail panelClassName="asset-palette" label="Assets" side="left" onExpand={togglePalette} />
+          )}
           <TopologyCanvas
             project={project}
             assessment={assessment}
@@ -416,20 +429,25 @@ export function App() {
             onUndo={undo}
             onRedo={redo}
           />
-          <InspectorPanel
-            project={project}
-            asset={selectedAsset}
-            conduit={selectedConduit}
-            onAssetChange={updateAsset}
-            onConduitChange={updateConduit}
-            onDeleteSelected={() => {
-              if (!selectedId) {
-                return;
-              }
-              setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
-            }}
-            onConfirmSelected={confirmSelection}
-          />
+          {layout.inspectorOpen ? (
+            <InspectorPanel
+              project={project}
+              asset={selectedAsset}
+              conduit={selectedConduit}
+              onAssetChange={updateAsset}
+              onConduitChange={updateConduit}
+              onDeleteSelected={() => {
+                if (!selectedId) {
+                  return;
+                }
+                setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
+              }}
+              onConfirmSelected={confirmSelection}
+              onCollapse={toggleInspector}
+            />
+          ) : (
+            <CollapsedRail panelClassName="inspector-panel" label="Inspector" side="right" onExpand={toggleInspector} />
+          )}
           <AnalysisPanel
             project={project}
             assessment={assessment}
@@ -443,6 +461,8 @@ export function App() {
             onCanvasModeChange={setCanvasMode}
             onFindingSelect={handleFindingSelect}
             onPrintReport={() => window.print()}
+            dockHeight={layout.dockHeight}
+            onDockResize={setDockHeight}
           />
         </section>
       </main>

@@ -427,11 +427,22 @@ body.light-mode .query-box select {
 }
 
 .workspace-grid {
+  --col-palette: 15.5rem;
+  --col-inspector: 21.5rem;
+  --canvas-min: 34rem;
   min-height: 0;
   display: grid;
-  grid-template-columns: 15.5rem minmax(34rem, 1fr) 21.5rem;
-  grid-template-rows: minmax(34rem, 1fr) 16rem;
+  grid-template-columns: var(--col-palette) minmax(var(--canvas-min), 1fr) var(--col-inspector);
+  grid-template-rows: minmax(16rem, 1fr) var(--dock-height, 16rem);
   gap: 1rem;
+}
+
+.workspace-grid.palette-collapsed {
+  --col-palette: 2.75rem;
+}
+
+.workspace-grid.inspector-collapsed {
+  --col-inspector: 2.75rem;
 }
 
 .asset-palette,
@@ -472,8 +483,35 @@ body.light-mode .query-box select {
 .analysis-panel {
   grid-column: 2;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   overflow: hidden;
+}
+
+.dock-resize-handle {
+  height: 0.55rem;
+  cursor: ns-resize;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  touch-action: none;
+}
+
+.dock-resize-handle::after {
+  content: "";
+  display: block;
+  width: 2.6rem;
+  height: 2px;
+  margin: 0.2rem auto 0;
+  background: var(--line-strong);
+}
+
+.dock-resize-handle:hover,
+.dock-resize-handle:focus-visible {
+  background: var(--accent-soft);
+}
+
+.dock-resize-handle:hover::after,
+.dock-resize-handle:focus-visible::after {
+  background: var(--accent);
 }
 
 .panel-heading {
@@ -493,6 +531,63 @@ body.light-mode .query-box select {
 .panel-heading small {
   color: var(--muted);
   font-size: 0.74rem;
+}
+
+.panel-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rail-collapse {
+  display: inline-grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: border-color var(--motion) var(--ease), color var(--motion) var(--ease);
+}
+
+.rail-collapse:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.asset-palette.is-collapsed,
+.inspector-panel.is-collapsed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.rail-expand {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: color var(--motion) var(--ease), background-color var(--motion) var(--ease);
+}
+
+.rail-expand:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.rail-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .panel-toggle {
@@ -2015,7 +2110,9 @@ button.verdict-finding:hover {
   }
 
   .workspace-grid {
-    grid-template-columns: 13.75rem minmax(27rem, 1fr) 20rem;
+    --col-palette: 13.75rem;
+    --col-inspector: 20rem;
+    --canvas-min: 27rem;
   }
 
   .reachability-grid {

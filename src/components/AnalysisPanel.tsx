@@ -1,5 +1,5 @@
 import { AlertTriangle, FileText, Grid2X2, ListFilter, Printer, Route, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
 import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
@@ -18,7 +18,12 @@ interface AnalysisPanelProps {
   onCanvasModeChange: (mode: CanvasMode) => void;
   onFindingSelect: (finding: Finding) => void;
   onPrintReport: () => void;
+  dockHeight: number;
+  onDockResize: (height: number) => void;
 }
+
+const DOCK_MIN = 7;
+const DOCK_MAX = 42;
 
 type TabId = "reachability" | "rating" | "findings" | "flows" | "matrix" | "report";
 
@@ -44,13 +49,57 @@ export function AnalysisPanel({
   onTargetChange,
   onCanvasModeChange,
   onFindingSelect,
-  onPrintReport
+  onPrintReport,
+  dockHeight,
+  onDockResize
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
+  const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    resizeState.current = { startY: event.clientY, startHeight: dockHeight };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handleResizePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = resizeState.current;
+    if (!state) {
+      return;
+    }
+    onDockResize(state.startHeight + (state.startY - event.clientY) / 16);
+  };
+  const handleResizePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (resizeState.current) {
+      resizeState.current = null;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      onDockResize(dockHeight + 1);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      onDockResize(dockHeight - 1);
+    }
+  };
 
   return (
     <section className="analysis-panel" aria-label="Analysis">
+      <div
+        className="dock-resize-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize analysis panel height"
+        aria-valuenow={Math.round(dockHeight)}
+        aria-valuemin={DOCK_MIN}
+        aria-valuemax={DOCK_MAX}
+        tabIndex={0}
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={handleResizePointerMove}
+        onPointerUp={handleResizePointerUp}
+        onKeyDown={handleResizeKeyDown}
+      />
       <div className="tabs" role="tablist" aria-label="Analysis views">
         <button className={activeTab === "reachability" ? "active" : ""} onClick={() => setActiveTab("reachability")}>
           <Route size={16} />

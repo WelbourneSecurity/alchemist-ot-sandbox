@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { ChevronsRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { assetTypes, zones } from "../data/catalog";
 import { protocolFamilies, protocolLabel, resolveProtocolFamily } from "../data/protocols";
@@ -24,6 +24,7 @@ interface InspectorPanelProps {
   onConduitChange: (conduitId: string, patch: Partial<Conduit>) => void;
   onDeleteSelected: () => void;
   onConfirmSelected: () => void;
+  onCollapse: () => void;
 }
 
 type ControlKey = keyof SecurityControls;
@@ -48,7 +49,8 @@ export function InspectorPanel({
   onAssetChange,
   onConduitChange,
   onDeleteSelected,
-  onConfirmSelected
+  onConfirmSelected,
+  onCollapse
 }: InspectorPanelProps) {
   const [panelMode, setPanelMode] = useState<"inspector" | "guide">("inspector");
 
@@ -56,7 +58,12 @@ export function InspectorPanel({
     <aside className="inspector-panel" aria-label="Inspector">
       <div className="panel-heading">
         <span>{panelMode === "inspector" ? "Inspector" : "Conduit Guide"}</span>
-        <small>{asset ? "Asset" : conduit ? "Conduit" : "No selection"}</small>
+        <div className="panel-heading-actions">
+          <small>{asset ? "Asset" : conduit ? "Conduit" : "No selection"}</small>
+          <button type="button" className="rail-collapse" onClick={onCollapse} title="Collapse inspector" aria-label="Collapse inspector">
+            <ChevronsRight size={15} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <div className="panel-toggle" aria-label="Inspector panel mode">
         <button type="button" className={panelMode === "inspector" ? "active" : ""} onClick={() => setPanelMode("inspector")}>
