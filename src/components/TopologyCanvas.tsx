@@ -17,6 +17,7 @@ import {
   type OnNodeDrag,
   useReactFlow
 } from "@xyflow/react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   ASSET_NODE_HEIGHT,
@@ -34,8 +35,10 @@ import { assetTypes, getAssetType, getZone, zones } from "../data/catalog";
 import { resolveProtocolFamily } from "../data/protocols";
 import { routeOrthogonalConduit } from "../engine/conduitRouting";
 import { conduitColor, conduitOpacity, conduitParallelOffsets, conduitSeverity } from "../engine/conduitVisuals";
-import type { Asset, AssetTypeId, CanvasMode, OtProject, Point, SecurityAssessment, ZoneId } from "../models/types";
+import type { Asset, AssetTypeId, CanvasMode, Finding, OtProject, Point, SecurityAssessment, ZoneId } from "../models/types";
+import { buildVerdict } from "../lib/verdict";
 import { AssetGlyph } from "./AssetGlyph";
+import { ScoreGauge } from "./ScoreGauge";
 
 interface TopologyCanvasProps {
   project: OtProject;
@@ -54,6 +57,7 @@ interface TopologyCanvasProps {
   onProjectChange: (updater: OtProject | ((current: OtProject) => OtProject), recordHistory?: boolean) => void;
   onCanvasModeChange: (mode: CanvasMode) => void;
   onToggleConnectMode: () => void;
+  onFindingSelect: (finding: Finding) => void;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -175,11 +179,15 @@ function TopologyCanvasInner({
   onProjectChange,
   onCanvasModeChange,
   onToggleConnectMode,
+  onFindingSelect,
   onUndo,
   onRedo
 }: TopologyCanvasProps) {
   const reactFlow = useReactFlow();
   const [isDragging, setIsDragging] = useState(false);
+  const [hudOpen, setHudOpen] = useState(true);
+  const verdict = buildVerdict(assessment);
+  const topFinding = assessment.findings[0];
   const highlightedSet = useMemo(() => new Set(highlightedConduitIds), [highlightedConduitIds]);
   const focusedConduitIds = useMemo(
     () => (canvasMode === "reachability" || canvasMode === "risk" ? highlightedSet : new Set<string>()),
@@ -403,6 +411,35 @@ function TopologyCanvasInner({
       </div>
 
       <div className={`react-flow-frame mode-${canvasMode} ${isDragging ? "is-dragging" : ""}`}>
+        <aside className={`canvas-hud${hudOpen ? "" : " is-collapsed"}`} aria-label="Advisory rating summary">
+          <button
+            type="button"
+            className="canvas-hud-head"
+            onClick={() => setHudOpen((open) => !open)}
+            aria-expanded={hudOpen}
+            title={hudOpen ? "Collapse rating summary" : "Expand rating summary"}
+          >
+            <ScoreGauge score={assessment.overallScore} band={assessment.band} size={34} thickness={11} />
+            <span className="canvas-hud-headline">{verdict.headline}</span>
+            {hudOpen ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
+          </button>
+          {hudOpen ? (
+            <div className="canvas-hud-body">
+              <span className="canvas-hud-detail">{verdict.detail}</span>
+              {topFinding ? (
+                <button
+                  type="button"
+                  className={`canvas-hud-finding severity-${topFinding.severity}`}
+                  onClick={() => onFindingSelect(topFinding)}
+                  title="Highlight affected conduits"
+                >
+                  <AlertTriangle size={13} aria-hidden="true" />
+                  <span>{topFinding.title}</span>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </aside>
         <ReactFlow
           nodes={flowNodes}
           edges={[]}

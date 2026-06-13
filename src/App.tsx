@@ -6,7 +6,7 @@ import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
-import type { Asset, AssetTypeId, CanvasMode, Conduit, OtProject, Point, ZoneId } from "./models/types";
+import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, ZoneId } from "./models/types";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
@@ -306,6 +306,12 @@ export function App() {
     setConnectMode(false);
   }, []);
 
+  const handleFindingSelect = useCallback((finding: Finding) => {
+    setActiveFindingId(finding.id);
+    setCanvasMode("risk");
+    setSelectedId(finding.affectedConduitIds[0] ?? finding.affectedAssetIds[0] ?? null);
+  }, []);
+
   const importProject = useCallback(
     (file: File) => {
       const reader = new FileReader();
@@ -368,6 +374,7 @@ export function App() {
               }
             }}
             onToggleConnectMode={handleToggleConnectMode}
+            onFindingSelect={handleFindingSelect}
             onUndo={undo}
             onRedo={redo}
           />
@@ -391,11 +398,7 @@ export function App() {
             onSourceChange={setReachSourceId}
             onTargetChange={setReachTargetId}
             onCanvasModeChange={setCanvasMode}
-            onFindingSelect={(finding) => {
-              setActiveFindingId(finding.id);
-              setCanvasMode("risk");
-              setSelectedId(finding.affectedConduitIds[0] ?? finding.affectedAssetIds[0] ?? null);
-            }}
+            onFindingSelect={handleFindingSelect}
             onPrintReport={() => window.print()}
           />
         </section>
