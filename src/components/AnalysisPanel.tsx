@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
 import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
+import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
   project: OtProject;
@@ -140,11 +141,8 @@ export function AnalysisPanel({
       ) : null}
 
       {activeTab === "rating" ? (
-        <div className="analysis-content rating-grid">
-          <div className={`score-dial band-${assessment.band}`}>
-            <strong>{assessment.overallScore}</strong>
-            <span>{assessment.band}</span>
-          </div>
+        <div className="analysis-content rating-stack">
+          <VerdictBanner assessment={assessment} onFindingSelect={onFindingSelect} />
           <div className="category-list">
             {assessment.categoryScores.map((category) => (
               <div className="category-row" key={category.category}>

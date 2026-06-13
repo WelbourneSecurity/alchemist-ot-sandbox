@@ -1,6 +1,7 @@
 import { Download, FileText, ImageDown, Moon, Printer, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
+import { ScoreGauge } from "./ScoreGauge";
 
 interface AppHeaderProps {
   project: OtProject;
@@ -77,8 +78,8 @@ export function AppHeader({
           <input value={project.name} onChange={(event) => onProjectNameChange(event.target.value)} />
         </label>
 
-        <div className={`header-score score-${scoreBand(score)}`} aria-label={`Security rating ${score} out of 100`}>
-          <span>{score}</span>
+        <div className="header-score" title={`Advisory security rating ${score} / 100`}>
+          <ScoreGauge score={score} band={scoreBand(score)} size={40} thickness={9} />
         </div>
       </div>
 
