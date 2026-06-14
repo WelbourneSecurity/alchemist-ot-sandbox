@@ -1,3 +1,4 @@
+import { ChevronsLeft } from "lucide-react";
 import { assetTypes } from "../data/catalog";
 import type { AssetTypeId } from "../models/types";
 import { AssetGlyph } from "./AssetGlyph";
@@ -19,14 +20,20 @@ const groups = [
 
 interface AssetPaletteProps {
   onAddAsset: (typeId: AssetTypeId) => void;
+  onCollapse: () => void;
 }
 
-export function AssetPalette({ onAddAsset }: AssetPaletteProps) {
+export function AssetPalette({ onAddAsset, onCollapse }: AssetPaletteProps) {
   return (
     <aside className="asset-palette" aria-label="Asset palette">
       <div className="panel-heading">
         <span>Asset Palette</span>
-        <small>Click or drag</small>
+        <div className="panel-heading-actions">
+          <small>Click or drag</small>
+          <button type="button" className="rail-collapse" onClick={onCollapse} title="Collapse palette" aria-label="Collapse asset palette">
+            <ChevronsLeft size={15} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       {groups.map((group) => (
         <section className="palette-group" key={group.label}>

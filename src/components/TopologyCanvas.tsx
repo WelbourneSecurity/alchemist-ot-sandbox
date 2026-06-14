@@ -301,6 +301,20 @@ function TopologyCanvasInner({
     });
   }, [assessment.findings, canvasMode, focusedConduitIds, liveAssets, project.conduits, selectedId]);
 
+  const contentExtent = useMemo(() => {
+    let maxX = 0;
+    let maxY = 0;
+    for (const asset of liveAssets) {
+      maxX = Math.max(maxX, asset.position.x);
+      maxY = Math.max(maxY, asset.position.y);
+    }
+    return {
+      bandWidth: Math.max(1900, maxX + ASSET_NODE_WIDTH + 600),
+      overlayWidth: Math.max(2600, maxX + ASSET_NODE_WIDTH + 400),
+      overlayHeight: Math.max(1450, maxY + ASSET_NODE_HEIGHT + 400)
+    };
+  }, [liveAssets]);
+
   const handleNodesChange = useCallback(
     (changes: NodeChange<AssetFlowNode>[]) => {
       setFlowNodes((currentNodes) =>
@@ -440,6 +454,15 @@ function TopologyCanvasInner({
             </div>
           ) : null}
         </aside>
+        {project.assets.length === 0 ? (
+          <div className="canvas-empty">
+            <strong>Empty topology</strong>
+            <p>
+              Drag an asset from the palette onto a Purdue zone to begin. Press <kbd>Ctrl / ⌘ K</kbd> for commands, or load
+              the Sample project from the header.
+            </p>
+          </div>
+        ) : null}
         <ReactFlow
           nodes={flowNodes}
           edges={[]}
@@ -464,7 +487,11 @@ function TopologyCanvasInner({
           proOptions={{ hideAttribution: true }}
         >
           <ViewportPortal>
-            <div className="zone-band-layer" aria-hidden="true">
+            <div
+              className="zone-band-layer"
+              aria-hidden="true"
+              style={{ "--zone-band-width": `${contentExtent.bandWidth}px` } as CSSProperties}
+            >
               {zones.map((zone, index) => (
                 <div
                   className="zone-band-node"
@@ -484,7 +511,11 @@ function TopologyCanvasInner({
                 </div>
               ))}
             </div>
-            <svg className="conduit-overlay" aria-hidden="true">
+            <svg
+              className="conduit-overlay"
+              aria-hidden="true"
+              style={{ width: contentExtent.overlayWidth, height: contentExtent.overlayHeight }}
+            >
               {conduitOverlayItems.map((item) => (
                 <g
                   className={`conduit-overlay-edge ${item.labelVisible ? "label-visible" : ""} ${
