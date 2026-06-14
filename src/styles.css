@@ -811,7 +811,7 @@ body.light-mode .react-flow-frame .react-flow {
 .canvas-minimap {
   width: 9.5rem !important;
   height: 6.5rem !important;
-  opacity: 0.38;
+  opacity: 0.55;
   transition: opacity 160ms ease;
 }
 
@@ -1047,6 +1047,186 @@ body.light-mode .react-flow-frame .react-flow {
   color: #fff;
 }
 
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3.5rem;
+  z-index: 100;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--accent);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: top var(--motion) var(--ease);
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+.analysis-panel-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.command-overlay {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+.command-palette {
+  width: min(34rem, 100%);
+  display: grid;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.command-input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--text);
+  background: transparent;
+  padding: 0.85rem 1rem;
+  font-size: 0.92rem;
+  outline: none;
+}
+
+.command-input::placeholder {
+  color: var(--muted);
+}
+
+.command-list {
+  max-height: 22rem;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.command-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  color: var(--text);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.command-item.is-active {
+  background: var(--accent-soft);
+  outline: 1px solid var(--line-strong);
+}
+
+.command-item small {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.command-empty {
+  padding: 0.85rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.shortcuts-overlay {
+  width: min(30rem, 100%);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.2rem 1.3rem 1.3rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.shortcuts-overlay > strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.shortcuts-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.shortcut-row {
+  display: grid;
+  grid-template-columns: minmax(12rem, auto) 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.shortcut-row dt {
+  margin: 0;
+}
+
+.shortcut-row dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+kbd {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.shortcuts-overlay .text-button {
+  justify-self: end;
+}
+
+.analysis-content {
+  animation: analysis-fade var(--motion) var(--ease);
+}
+
+@keyframes analysis-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes conduit-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.react-flow-frame.mode-risk .conduit-overlay-edge.is-highlighted .conduit-overlay-underlay {
+  animation: conduit-pulse 1.8s var(--ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .snap-grid-background {
   opacity: 0;
   transition: opacity 140ms ease;
@@ -1067,7 +1247,7 @@ body.light-mode .react-flow-frame .react-flow {
   position: absolute;
   left: -248px;
   top: var(--zone-band-y);
-  width: 1900px;
+  width: var(--zone-band-width, 1900px);
   height: var(--zone-band-height);
   display: grid;
   grid-template-columns: 16rem 1fr;
