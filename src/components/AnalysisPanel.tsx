@@ -1,4 +1,15 @@
-import { AlertTriangle, FileText, Grid2X2, ListFilter, Printer, Route, ShieldCheck, type LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Grid2X2,
+  ListFilter,
+  Printer,
+  Route,
+  ShieldCheck,
+  type LucideIcon
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
@@ -20,6 +31,8 @@ interface AnalysisPanelProps {
   onPrintReport: () => void;
   dockHeight: number;
   onDockResize: (height: number) => void;
+  dockOpen: boolean;
+  onToggleDock: () => void;
 }
 
 const DOCK_MIN = 7;
@@ -60,7 +73,9 @@ export function AnalysisPanel({
   onFindingSelect,
   onPrintReport,
   dockHeight,
-  onDockResize
+  onDockResize,
+  dockOpen,
+  onToggleDock
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
   const [includeDocs, setIncludeDocs] = useState(false);
@@ -125,22 +140,34 @@ export function AnalysisPanel({
   };
 
   return (
-    <section className="analysis-panel" aria-label="Analysis">
-      <div
-        className="dock-resize-handle"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize analysis panel height"
-        aria-valuenow={Math.round(dockHeight)}
-        aria-valuemin={DOCK_MIN}
-        aria-valuemax={DOCK_MAX}
-        tabIndex={0}
-        onPointerDown={handleResizePointerDown}
-        onPointerMove={handleResizePointerMove}
-        onPointerUp={handleResizePointerUp}
-        onKeyDown={handleResizeKeyDown}
-      />
-      <div className="tabs" role="tablist" aria-label="Analysis views" onKeyDown={handleTabKeyDown}>
+    <section className={`analysis-panel${dockOpen ? "" : " is-collapsed"}`} aria-label="Analysis">
+      {dockOpen ? (
+        <div
+          className="dock-resize-handle"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize analysis panel height"
+          aria-valuenow={Math.round(dockHeight)}
+          aria-valuemin={DOCK_MIN}
+          aria-valuemax={DOCK_MAX}
+          tabIndex={0}
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onKeyDown={handleResizeKeyDown}
+        />
+      ) : null}
+      <div className="dock-tabs-row">
+        <button
+          type="button"
+          className="dock-toggle"
+          onClick={onToggleDock}
+          aria-expanded={dockOpen}
+          title={dockOpen ? "Collapse analysis" : "Expand analysis"}
+        >
+          {dockOpen ? <ChevronDown size={15} aria-hidden="true" /> : <ChevronUp size={15} aria-hidden="true" />}
+        </button>
+        <div className="tabs" role="tablist" aria-label="Analysis views" onKeyDown={handleTabKeyDown}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -151,14 +178,21 @@ export function AnalysisPanel({
             aria-controls="analysis-tabpanel"
             tabIndex={activeTab === tab.id ? 0 : -1}
             className={activeTab === tab.id ? "active" : ""}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (!dockOpen) {
+                onToggleDock();
+              }
+            }}
           >
             <tab.Icon size={16} aria-hidden="true" />
             {tab.label}
           </button>
         ))}
+        </div>
       </div>
 
+      {dockOpen ? (
       <div
         className="analysis-panel-body"
         role="tabpanel"
@@ -410,6 +444,7 @@ export function AnalysisPanel({
         </div>
       ) : null}
       </div>
+      ) : null}
     </section>
   );
 }

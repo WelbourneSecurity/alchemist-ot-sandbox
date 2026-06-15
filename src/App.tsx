@@ -142,7 +142,7 @@ export function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
-  const { layout, togglePalette, toggleInspector, setDockHeight } = usePanelLayout();
+  const { layout, togglePalette, toggleDock, setDockHeight } = usePanelLayout();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -433,7 +433,7 @@ export function App() {
       { id: "connect", label: "Toggle connect mode", hint: "C", run: handleToggleConnectMode },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
-      { id: "inspector", label: layout.inspectorOpen ? "Collapse inspector" : "Expand inspector", run: toggleInspector },
+      { id: "dock", label: layout.dockOpen ? "Collapse analysis dock" : "Expand analysis dock", run: toggleDock },
       { id: "shortcuts", label: "Show keyboard shortcuts", hint: "?", run: () => setShortcutsOpen(true) },
       { id: "mode-clean", label: "Canvas: clean view", run: () => setCanvasMode("clean") },
       { id: "mode-protocol", label: "Canvas: protocol view", run: () => setCanvasMode("protocol") },
@@ -466,9 +466,9 @@ export function App() {
     handleExportSvg,
     handleToggleConnectMode,
     togglePalette,
-    toggleInspector,
+    toggleDock,
     layout.paletteOpen,
-    layout.inspectorOpen,
+    layout.dockOpen,
     assessment.findings,
     handleFindingSelect,
     history.length,
@@ -507,9 +507,9 @@ export function App() {
           id="workspace"
           tabIndex={-1}
           className={`workspace-grid${layout.paletteOpen ? "" : " palette-collapsed"}${
-            layout.inspectorOpen ? "" : " inspector-collapsed"
+            selectedAsset || selectedConduit ? "" : " inspector-hidden"
           }`}
-          style={{ "--dock-height": `${layout.dockHeight}rem` } as CSSProperties}
+          style={{ "--dock-height": layout.dockOpen ? `${layout.dockHeight}rem` : "auto" } as CSSProperties}
           aria-label="OT network sandbox workspace"
         >
           {layout.paletteOpen ? (
@@ -543,7 +543,7 @@ export function App() {
             onUndo={undo}
             onRedo={redo}
           />
-          {layout.inspectorOpen ? (
+          {selectedAsset || selectedConduit ? (
             <InspectorPanel
               project={project}
               asset={selectedAsset}
@@ -552,11 +552,9 @@ export function App() {
               onConduitChange={updateConduit}
               onDeleteSelected={requestDelete}
               onConfirmSelected={confirmSelection}
-              onCollapse={toggleInspector}
+              onCollapse={() => setSelectedId(null)}
             />
-          ) : (
-            <CollapsedRail panelClassName="inspector-panel" label="Inspector" side="right" onExpand={toggleInspector} />
-          )}
+          ) : null}
           <AnalysisPanel
             project={project}
             assessment={assessment}
@@ -572,6 +570,8 @@ export function App() {
             onPrintReport={() => window.print()}
             dockHeight={layout.dockHeight}
             onDockResize={setDockHeight}
+            dockOpen={layout.dockOpen}
+            onToggleDock={toggleDock}
           />
         </section>
       </main>

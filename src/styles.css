@@ -441,8 +441,8 @@ body.light-mode .query-box select {
   --col-palette: 2.75rem;
 }
 
-.workspace-grid.inspector-collapsed {
-  --col-inspector: 2.75rem;
+.workspace-grid.inspector-hidden {
+  grid-template-columns: var(--col-palette) minmax(var(--canvas-min), 1fr);
 }
 
 .asset-palette,
@@ -1269,8 +1269,8 @@ kbd {
   bottom: 0;
   left: 0;
   width: 16rem;
-  border-right: 1px solid color-mix(in srgb, var(--zone-band-color) 40%, var(--line));
-  background: color-mix(in srgb, var(--bg) 88%, var(--zone-band-color));
+  border-right: 2px solid color-mix(in srgb, var(--zone-band-color) 60%, var(--line));
+  background: color-mix(in srgb, var(--bg) 82%, var(--zone-band-color));
 }
 
 .zone-band-node strong,
@@ -1878,11 +1878,35 @@ body.light-mode .conduit-label {
   line-height: 1.45;
 }
 
+.dock-tabs-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+}
+
+.dock-toggle {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: color var(--motion) var(--ease), background-color var(--motion) var(--ease);
+}
+
+.dock-toggle:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
 .tabs {
+  flex: 1;
   display: flex;
   gap: 0.35rem;
   padding: 0.55rem;
-  border-bottom: 1px solid var(--line);
   background: transparent;
   overflow-x: auto;
 }
@@ -2441,7 +2465,8 @@ button.verdict-finding:hover {
     position: static;
   }
 
-  .workspace-grid {
+  .workspace-grid,
+  .workspace-grid.inspector-hidden {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(34rem, 62vh) auto auto;
   }
