@@ -1592,6 +1592,55 @@ body.light-mode .conduit-label {
   gap: 0.78rem;
 }
 
+.inspector-section {
+  border: 1px solid var(--line);
+  background: transparent;
+}
+
+.inspector-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0.7rem;
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inspector-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.inspector-section > summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.inspector-section[open] > summary::after {
+  content: "\2212";
+}
+
+.inspector-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-section-body {
+  display: grid;
+  gap: 0.78rem;
+  padding: 0.78rem 0.7rem;
+}
+
+.inspector-section-body .control-grid {
+  border: 0;
+  padding: 0;
+}
+
 .field {
   min-width: 0;
   display: grid;
