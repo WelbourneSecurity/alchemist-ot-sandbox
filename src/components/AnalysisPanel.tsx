@@ -1,8 +1,9 @@
-import { AlertTriangle, FileText, Grid2X2, ListFilter, Printer, Route, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, FileText, Grid2X2, ListFilter, Printer, Route, ShieldCheck, type LucideIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
 import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
+import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
   project: OtProject;
@@ -17,7 +18,21 @@ interface AnalysisPanelProps {
   onCanvasModeChange: (mode: CanvasMode) => void;
   onFindingSelect: (finding: Finding) => void;
   onPrintReport: () => void;
+  dockHeight: number;
+  onDockResize: (height: number) => void;
 }
+
+const DOCK_MIN = 7;
+const DOCK_MAX = 42;
+
+const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
+  { id: "reachability", label: "Reachability", Icon: Route },
+  { id: "rating", label: "Security Rating", Icon: ShieldCheck },
+  { id: "findings", label: "Findings", Icon: AlertTriangle },
+  { id: "flows", label: "Flow Table", Icon: ListFilter },
+  { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 },
+  { id: "report", label: "Report", Icon: FileText }
+];
 
 type TabId = "reachability" | "rating" | "findings" | "flows" | "matrix" | "report";
 
@@ -43,40 +58,103 @@ export function AnalysisPanel({
   onTargetChange,
   onCanvasModeChange,
   onFindingSelect,
-  onPrintReport
+  onPrintReport,
+  dockHeight,
+  onDockResize
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
+  const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    resizeState.current = { startY: event.clientY, startHeight: dockHeight };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handleResizePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = resizeState.current;
+    if (!state) {
+      return;
+    }
+    onDockResize(state.startHeight + (state.startY - event.clientY) / 16);
+  };
+  const handleResizePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (resizeState.current) {
+      resizeState.current = null;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      onDockResize(dockHeight + 1);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      onDockResize(dockHeight - 1);
+    }
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = TABS.findIndex((tab) => tab.id === activeTab);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % TABS.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = TABS.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    const next = TABS[nextIndex];
+    setActiveTab(next.id);
+    requestAnimationFrame(() => document.getElementById(`analysis-tab-${next.id}`)?.focus());
+  };
 
   return (
     <section className="analysis-panel" aria-label="Analysis">
-      <div className="tabs" role="tablist" aria-label="Analysis views">
-        <button className={activeTab === "reachability" ? "active" : ""} onClick={() => setActiveTab("reachability")}>
-          <Route size={16} />
-          Reachability
-        </button>
-        <button className={activeTab === "rating" ? "active" : ""} onClick={() => setActiveTab("rating")}>
-          <ShieldCheck size={16} />
-          Security Rating
-        </button>
-        <button className={activeTab === "findings" ? "active" : ""} onClick={() => setActiveTab("findings")}>
-          <AlertTriangle size={16} />
-          Findings
-        </button>
-        <button className={activeTab === "flows" ? "active" : ""} onClick={() => setActiveTab("flows")}>
-          <ListFilter size={16} />
-          Flow Table
-        </button>
-        <button className={activeTab === "matrix" ? "active" : ""} onClick={() => setActiveTab("matrix")}>
-          <Grid2X2 size={16} />
-          Zone Matrix
-        </button>
-        <button className={activeTab === "report" ? "active" : ""} onClick={() => setActiveTab("report")}>
-          <FileText size={16} />
-          Report
-        </button>
+      <div
+        className="dock-resize-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize analysis panel height"
+        aria-valuenow={Math.round(dockHeight)}
+        aria-valuemin={DOCK_MIN}
+        aria-valuemax={DOCK_MAX}
+        tabIndex={0}
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={handleResizePointerMove}
+        onPointerUp={handleResizePointerUp}
+        onKeyDown={handleResizeKeyDown}
+      />
+      <div className="tabs" role="tablist" aria-label="Analysis views" onKeyDown={handleTabKeyDown}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            id={`analysis-tab-${tab.id}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls="analysis-tabpanel"
+            tabIndex={activeTab === tab.id ? 0 : -1}
+            className={activeTab === tab.id ? "active" : ""}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <tab.Icon size={16} aria-hidden="true" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
+      <div
+        className="analysis-panel-body"
+        role="tabpanel"
+        id="analysis-tabpanel"
+        aria-labelledby={`analysis-tab-${activeTab}`}
+        tabIndex={0}
+      >
       {activeTab === "reachability" ? (
         <div className="analysis-content reachability-grid">
           <div className="query-box">
@@ -140,11 +218,8 @@ export function AnalysisPanel({
       ) : null}
 
       {activeTab === "rating" ? (
-        <div className="analysis-content rating-grid">
-          <div className={`score-dial band-${assessment.band}`}>
-            <strong>{assessment.overallScore}</strong>
-            <span>{assessment.band}</span>
-          </div>
+        <div className="analysis-content rating-stack">
+          <VerdictBanner assessment={assessment} onFindingSelect={onFindingSelect} />
           <div className="category-list">
             {assessment.categoryScores.map((category) => (
               <div className="category-row" key={category.category}>
@@ -297,6 +372,7 @@ export function AnalysisPanel({
           </div>
         </div>
       ) : null}
+      </div>
     </section>
   );
 }

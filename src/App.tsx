@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
 import { assetYForZone, inferZoneFromY, snapAssetPosition, snapPointToZone } from "./data/canvasLayout";
@@ -6,13 +6,21 @@ import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
-import type { Asset, AssetTypeId, CanvasMode, Conduit, OtProject, Point, ZoneId } from "./models/types";
+import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, ZoneId } from "./models/types";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
+import { CollapsedRail } from "./components/CollapsedRail";
+import { CommandPalette, type Command } from "./components/CommandPalette";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { PrintableReport } from "./components/PrintableReport";
+import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
+import { ToastViewport } from "./components/ToastViewport";
 import { TopologyCanvas } from "./components/TopologyCanvas";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { usePanelLayout } from "./hooks/usePanelLayout";
+import { useToasts } from "./hooks/useToasts";
 
 const STORAGE_KEY = "alchemist-ot-sandbox-project";
 const HISTORY_LIMIT = 30;
@@ -121,6 +129,12 @@ export function App() {
     }
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
+  const { layout, togglePalette, toggleInspector, setDockHeight } = usePanelLayout();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -306,25 +320,135 @@ export function App() {
     setConnectMode(false);
   }, []);
 
+  const handleFindingSelect = useCallback((finding: Finding) => {
+    setActiveFindingId(finding.id);
+    setCanvasMode("risk");
+    setSelectedId(finding.affectedConduitIds[0] ?? finding.affectedAssetIds[0] ?? null);
+  }, []);
+
   const importProject = useCallback(
     (file: File) => {
       const reader = new FileReader();
       reader.onload = () => {
         const result = parseProjectJson(String(reader.result ?? ""));
         if (!result.ok) {
-          window.alert(`Import failed:\n${result.errors.join("\n")}`);
+          pushToast(`Import failed: ${result.errors.join("; ")}`, "danger");
           return;
         }
         commitProject(result.project);
         setSelectedId(null);
+        pushToast("Project imported", "success");
       };
+      reader.onerror = () => pushToast("Could not read that file", "danger");
       reader.readAsText(file);
     },
-    [commitProject]
+    [commitProject, pushToast]
   );
+
+  const handleExportJson = useCallback(() => {
+    downloadJson(project.name, serializeProject(project));
+    pushToast("Exported project JSON", "success");
+  }, [project, pushToast]);
+
+  const handleExportSvg = useCallback(() => {
+    downloadTopologySvg(project, assessment);
+    pushToast("Exported topology SVG", "success");
+  }, [project, assessment, pushToast]);
+
+  const handleLoadSample = useCallback(() => {
+    commitProject(cloneProject(sampleProject));
+    setSelectedId(null);
+    pushToast("Sample project loaded", "info");
+  }, [commitProject, pushToast]);
+
+  const handleNewBlank = useCallback(() => {
+    commitProject(cloneProject(blankProject));
+    setSelectedId(null);
+    pushToast("Blank project created", "info");
+  }, [commitProject, pushToast]);
+
+  const confirmDelete = useCallback(() => {
+    if (!pendingDelete) {
+      return;
+    }
+    removeSelected();
+    pushToast(`Deleted ${pendingDelete.label}`, "info");
+    setPendingDelete(null);
+  }, [pendingDelete, removeSelected, pushToast]);
+
+  const requestDelete = useCallback(() => {
+    if (!selectedId) {
+      return;
+    }
+    setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
+  }, [selectedId, selectedAsset, selectedConduit]);
+
+  useKeyboardShortcuts({
+    onCommandPalette: () => setCommandOpen(true),
+    onUndo: undo,
+    onRedo: redo,
+    onDelete: requestDelete,
+    onToggleConnect: handleToggleConnectMode,
+    onShowShortcuts: () => setShortcutsOpen((open) => !open)
+  });
+
+  const commands = useMemo<Command[]>(() => {
+    const list: Command[] = [
+      { id: "sample", label: "Load sample project", run: handleLoadSample },
+      { id: "blank", label: "New blank project", run: handleNewBlank },
+      { id: "import", label: "Import project…", hint: "JSON", run: () => importInputRef.current?.click() },
+      { id: "export-json", label: "Export project JSON", run: handleExportJson },
+      { id: "export-svg", label: "Export topology SVG", run: handleExportSvg },
+      { id: "print", label: "Print / save PDF report", run: () => window.print() },
+      { id: "connect", label: "Toggle connect mode", hint: "C", run: handleToggleConnectMode },
+      { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
+      { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
+      { id: "inspector", label: layout.inspectorOpen ? "Collapse inspector" : "Expand inspector", run: toggleInspector },
+      { id: "shortcuts", label: "Show keyboard shortcuts", hint: "?", run: () => setShortcutsOpen(true) },
+      { id: "mode-clean", label: "Canvas: clean view", run: () => setCanvasMode("clean") },
+      { id: "mode-protocol", label: "Canvas: protocol view", run: () => setCanvasMode("protocol") },
+      { id: "mode-risk", label: "Canvas: risk view", run: () => setCanvasMode("risk") },
+      { id: "mode-boundary", label: "Canvas: boundary view", run: () => setCanvasMode("boundary") },
+      { id: "mode-path", label: "Canvas: attacker path view", run: () => setCanvasMode("reachability") }
+    ];
+    if (assessment.findings.length > 0) {
+      list.push({
+        id: "top-finding",
+        label: "Go to top finding",
+        hint: assessment.findings[0].severity,
+        run: () => handleFindingSelect(assessment.findings[0])
+      });
+    }
+    if (history.length > 0) {
+      list.push({ id: "undo", label: "Undo", hint: "Ctrl+Z", run: undo });
+    }
+    if (future.length > 0) {
+      list.push({ id: "redo", label: "Redo", hint: "Ctrl+Shift+Z", run: redo });
+    }
+    return list;
+  }, [
+    handleLoadSample,
+    handleNewBlank,
+    handleExportJson,
+    handleExportSvg,
+    handleToggleConnectMode,
+    togglePalette,
+    toggleInspector,
+    layout.paletteOpen,
+    layout.inspectorOpen,
+    assessment.findings,
+    handleFindingSelect,
+    history.length,
+    future.length,
+    undo,
+    redo
+  ]);
 
   return (
     <>
+      <a className="skip-link" href="#workspace">
+        Skip to workspace
+      </a>
       <main className="app-shell">
         <AppHeader
           project={project}
@@ -334,18 +458,30 @@ export function App() {
           canRedo={future.length > 0}
           onProjectNameChange={(name) => commitProject((current) => ({ ...current, name }))}
           onImport={importProject}
-          onExportJson={() => downloadJson(project.name, serializeProject(project))}
-          onExportSvg={() => downloadTopologySvg(project, assessment)}
+          onExportJson={handleExportJson}
+          onExportSvg={handleExportSvg}
           onPrintReport={() => window.print()}
-          onLoadSample={() => commitProject(cloneProject(sampleProject))}
-          onNewBlank={() => commitProject(cloneProject(blankProject))}
+          onLoadSample={handleLoadSample}
+          onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
           onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         />
 
-        <section className="workspace-grid" aria-label="OT network sandbox workspace">
-          <AssetPalette onAddAsset={addAsset} />
+        <section
+          id="workspace"
+          tabIndex={-1}
+          className={`workspace-grid${layout.paletteOpen ? "" : " palette-collapsed"}${
+            layout.inspectorOpen ? "" : " inspector-collapsed"
+          }`}
+          style={{ "--dock-height": `${layout.dockHeight}rem` } as CSSProperties}
+          aria-label="OT network sandbox workspace"
+        >
+          {layout.paletteOpen ? (
+            <AssetPalette onAddAsset={addAsset} onCollapse={togglePalette} />
+          ) : (
+            <CollapsedRail panelClassName="asset-palette" label="Assets" side="left" onExpand={togglePalette} />
+          )}
           <TopologyCanvas
             project={project}
             assessment={assessment}
@@ -368,18 +504,24 @@ export function App() {
               }
             }}
             onToggleConnectMode={handleToggleConnectMode}
+            onFindingSelect={handleFindingSelect}
             onUndo={undo}
             onRedo={redo}
           />
-          <InspectorPanel
-            project={project}
-            asset={selectedAsset}
-            conduit={selectedConduit}
-            onAssetChange={updateAsset}
-            onConduitChange={updateConduit}
-            onDeleteSelected={removeSelected}
-            onConfirmSelected={confirmSelection}
-          />
+          {layout.inspectorOpen ? (
+            <InspectorPanel
+              project={project}
+              asset={selectedAsset}
+              conduit={selectedConduit}
+              onAssetChange={updateAsset}
+              onConduitChange={updateConduit}
+              onDeleteSelected={requestDelete}
+              onConfirmSelected={confirmSelection}
+              onCollapse={toggleInspector}
+            />
+          ) : (
+            <CollapsedRail panelClassName="inspector-panel" label="Inspector" side="right" onExpand={toggleInspector} />
+          )}
           <AnalysisPanel
             project={project}
             assessment={assessment}
@@ -391,17 +533,46 @@ export function App() {
             onSourceChange={setReachSourceId}
             onTargetChange={setReachTargetId}
             onCanvasModeChange={setCanvasMode}
-            onFindingSelect={(finding) => {
-              setActiveFindingId(finding.id);
-              setCanvasMode("risk");
-              setSelectedId(finding.affectedConduitIds[0] ?? finding.affectedAssetIds[0] ?? null);
-            }}
+            onFindingSelect={handleFindingSelect}
             onPrintReport={() => window.print()}
+            dockHeight={layout.dockHeight}
+            onDockResize={setDockHeight}
           />
         </section>
       </main>
 
       <PrintableReport project={project} assessment={assessment} reachability={reachability} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete from topology"
+        message={
+          pendingDelete
+            ? `Remove ${pendingDelete.label}? Any connected conduits are removed too. You can undo this.`
+            : ""
+        }
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+      <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
+      <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+
+      <input
+        ref={importInputRef}
+        className="visually-hidden"
+        type="file"
+        accept="application/json,.json"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            importProject(file);
+            event.target.value = "";
+          }
+        }}
+      />
     </>
   );
 }
