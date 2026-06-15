@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
-import { assetYForZone, inferZoneFromY, snapAssetPosition, snapPointToZone } from "./data/canvasLayout";
+import {
+  ASSET_NODE_WIDTH,
+  CANVAS_GRID_X,
+  assetYForZone,
+  inferZoneFromY,
+  snapAssetPosition,
+  snapPointToZone,
+  snapX
+} from "./data/canvasLayout";
 import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
@@ -229,11 +237,14 @@ export function App() {
     (typeId: AssetTypeId, position?: Point) => {
       const type = getAssetType(typeId);
       const zone = position ? inferZoneFromY(position.y) : type.defaultZone;
-      const sameZoneCount = project.assets.filter((asset) => asset.zone === zone).length;
-      const fallbackPosition = snapAssetPosition({
-        x: 96 + sameZoneCount * 240,
-        y: assetYForZone(zone)
-      });
+      const occupied = new Set(
+        project.assets.filter((asset) => asset.zone === zone).map((asset) => snapX(asset.position.x))
+      );
+      let slotX = 96;
+      while (occupied.has(snapX(slotX))) {
+        slotX += ASSET_NODE_WIDTH + CANVAS_GRID_X;
+      }
+      const fallbackPosition = { x: snapX(slotX), y: assetYForZone(zone) };
       const asset = createAsset(typeId, position ? snapPointToZone(position, zone) : fallbackPosition, zone);
       commitProject((current) => ({ ...current, assets: [...current.assets, asset] }));
       setSelectedId(asset.id);
@@ -384,13 +395,31 @@ export function App() {
     setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
   }, [selectedId, selectedAsset, selectedConduit]);
 
+  const duplicateSelected = useCallback(() => {
+    if (!selectedAsset) {
+      return;
+    }
+    const clone: Asset = {
+      ...selectedAsset,
+      id: makeId("asset"),
+      name: `${selectedAsset.name} copy`,
+      position: snapAssetPosition({ x: selectedAsset.position.x + 96, y: selectedAsset.position.y }),
+      protocols: [...selectedAsset.protocols],
+      controls: { ...selectedAsset.controls }
+    };
+    commitProject((current) => ({ ...current, assets: [...current.assets, clone] }));
+    setSelectedId(clone.id);
+    pushToast("Asset duplicated", "info");
+  }, [selectedAsset, commitProject, pushToast]);
+
   useKeyboardShortcuts({
     onCommandPalette: () => setCommandOpen(true),
     onUndo: undo,
     onRedo: redo,
     onDelete: requestDelete,
     onToggleConnect: handleToggleConnectMode,
-    onShowShortcuts: () => setShortcutsOpen((open) => !open)
+    onShowShortcuts: () => setShortcutsOpen((open) => !open),
+    onDuplicate: duplicateSelected
   });
 
   const commands = useMemo<Command[]>(() => {
@@ -412,6 +441,9 @@ export function App() {
       { id: "mode-boundary", label: "Canvas: boundary view", run: () => setCanvasMode("boundary") },
       { id: "mode-path", label: "Canvas: attacker path view", run: () => setCanvasMode("reachability") }
     ];
+    if (selectedAsset) {
+      list.push({ id: "duplicate", label: "Duplicate selected asset", hint: "Ctrl+D", run: duplicateSelected });
+    }
     if (assessment.findings.length > 0) {
       list.push({
         id: "top-finding",
@@ -442,7 +474,9 @@ export function App() {
     history.length,
     future.length,
     undo,
-    redo
+    redo,
+    duplicateSelected,
+    selectedAsset
   ]);
 
   return (
