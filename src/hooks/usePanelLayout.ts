@@ -3,13 +3,14 @@ import { useCallback, useEffect, useState } from "react";
 export interface PanelLayout {
   paletteOpen: boolean;
   inspectorOpen: boolean;
+  dockOpen: boolean;
   dockHeight: number;
 }
 
 const STORAGE_KEY = "alchemist-panel-layout";
 const MIN_DOCK = 7;
 const MAX_DOCK = 42;
-const DEFAULT_LAYOUT: PanelLayout = { paletteOpen: true, inspectorOpen: true, dockHeight: 16 };
+const DEFAULT_LAYOUT: PanelLayout = { paletteOpen: true, inspectorOpen: true, dockOpen: false, dockHeight: 12 };
 
 function clampDock(value: number) {
   if (!Number.isFinite(value)) {
@@ -28,6 +29,7 @@ function loadLayout(): PanelLayout {
     return {
       paletteOpen: parsed.paletteOpen ?? DEFAULT_LAYOUT.paletteOpen,
       inspectorOpen: parsed.inspectorOpen ?? DEFAULT_LAYOUT.inspectorOpen,
+      dockOpen: parsed.dockOpen ?? DEFAULT_LAYOUT.dockOpen,
       dockHeight: clampDock(parsed.dockHeight ?? DEFAULT_LAYOUT.dockHeight)
     };
   } catch {
@@ -52,10 +54,11 @@ export function usePanelLayout() {
     () => setLayout((current) => ({ ...current, inspectorOpen: !current.inspectorOpen })),
     []
   );
+  const toggleDock = useCallback(() => setLayout((current) => ({ ...current, dockOpen: !current.dockOpen })), []);
   const setDockHeight = useCallback(
-    (height: number) => setLayout((current) => ({ ...current, dockHeight: clampDock(height) })),
+    (height: number) => setLayout((current) => ({ ...current, dockHeight: clampDock(height), dockOpen: true })),
     []
   );
 
-  return { layout, togglePalette, toggleInspector, setDockHeight };
+  return { layout, togglePalette, toggleInspector, toggleDock, setDockHeight };
 }

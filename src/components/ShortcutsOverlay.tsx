@@ -10,7 +10,10 @@ const SHORTCUTS: Array<{ keys: string; action: string }> = [
   { keys: "Ctrl / ⌘ + Z", action: "Undo" },
   { keys: "Ctrl / ⌘ + Shift + Z  ·  Ctrl / ⌘ + Y", action: "Redo" },
   { keys: "C", action: "Toggle connect mode" },
-  { keys: "Delete / Backspace", action: "Delete selected asset or conduit" },
+  { keys: "Ctrl / ⌘ + D", action: "Duplicate selected asset" },
+  { keys: "Delete / Backspace", action: "Delete selected (or box-selected) items" },
+  { keys: "Shift + drag", action: "Box-select multiple assets" },
+  { keys: "Double-click asset", action: "Rename it on the canvas" },
   { keys: "Esc", action: "Cancel connect mode / deselect" },
   { keys: "?", action: "Show this shortcut reference" }
 ];

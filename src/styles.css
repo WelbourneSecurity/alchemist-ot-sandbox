@@ -441,8 +441,8 @@ body.light-mode .query-box select {
   --col-palette: 2.75rem;
 }
 
-.workspace-grid.inspector-collapsed {
-  --col-inspector: 2.75rem;
+.workspace-grid.inspector-hidden {
+  grid-template-columns: var(--col-palette) minmax(var(--canvas-min), 1fr);
 }
 
 .asset-palette,
@@ -1269,8 +1269,8 @@ kbd {
   bottom: 0;
   left: 0;
   width: 16rem;
-  border-right: 1px solid color-mix(in srgb, var(--zone-band-color) 40%, var(--line));
-  background: color-mix(in srgb, var(--bg) 88%, var(--zone-band-color));
+  border-right: 2px solid color-mix(in srgb, var(--zone-band-color) 60%, var(--line));
+  background: color-mix(in srgb, var(--bg) 82%, var(--zone-band-color));
 }
 
 .zone-band-node strong,
@@ -1404,6 +1404,21 @@ body.light-mode .asset-node {
   line-height: 1.15;
 }
 
+.asset-node-rename {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.15;
+  padding: 0.02rem 0.2rem;
+  outline: none;
+}
+
 .asset-node-body span {
   color: var(--muted);
   font-size: 0.68rem;
@@ -1419,12 +1434,38 @@ body.light-mode .asset-node {
 }
 
 .flow-handle {
-  width: 0.68rem;
-  height: 0.68rem;
+  width: 0.9rem;
+  height: 0.9rem;
   border: 1px solid var(--bg);
   background: color-mix(in srgb, var(--accent) 82%, var(--zone-color));
-  opacity: 0.42;
-  transition: opacity 140ms ease, background-color 140ms ease;
+  opacity: 0.6;
+  transition: opacity 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.flow-handle:hover {
+  transform: scale(1.25);
+}
+
+.canvas-connect-banner {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--signal);
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.canvas-connect-banner span {
+  color: var(--muted);
 }
 
 .asset-node:hover .flow-handle,
@@ -1564,6 +1605,55 @@ body.light-mode .conduit-label {
 .inspector-form {
   display: grid;
   gap: 0.78rem;
+}
+
+.inspector-section {
+  border: 1px solid var(--line);
+  background: transparent;
+}
+
+.inspector-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0.7rem;
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inspector-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.inspector-section > summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.inspector-section[open] > summary::after {
+  content: "\2212";
+}
+
+.inspector-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-section-body {
+  display: grid;
+  gap: 0.78rem;
+  padding: 0.78rem 0.7rem;
+}
+
+.inspector-section-body .control-grid {
+  border: 0;
+  padding: 0;
 }
 
 .field {
@@ -1803,11 +1893,35 @@ body.light-mode .conduit-label {
   line-height: 1.45;
 }
 
+.dock-tabs-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+}
+
+.dock-toggle {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  flex: 0 0 auto;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: color var(--motion) var(--ease), background-color var(--motion) var(--ease);
+}
+
+.dock-toggle:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
 .tabs {
+  flex: 1;
   display: flex;
   gap: 0.35rem;
   padding: 0.55rem;
-  border-bottom: 1px solid var(--line);
   background: transparent;
   overflow-x: auto;
 }
@@ -2084,6 +2198,62 @@ button.verdict-finding:hover {
   gap: 0.55rem;
 }
 
+.findings-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.sev-chip {
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.55rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  transition: opacity var(--motion) var(--ease), border-color var(--motion) var(--ease), color var(--motion) var(--ease);
+}
+
+.sev-chip.is-on {
+  opacity: 1;
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.sev-chip.sev-critical.is-on,
+.sev-chip.sev-high.is-on {
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 55%, var(--line));
+}
+
+.docs-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.docs-toggle input {
+  width: 0.9rem;
+  height: 0.9rem;
+  accent-color: var(--accent);
+}
+
+.findings-hidden-note {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .finding {
   display: grid;
   gap: 0.35rem;
@@ -2310,7 +2480,8 @@ button.verdict-finding:hover {
     position: static;
   }
 
-  .workspace-grid {
+  .workspace-grid,
+  .workspace-grid.inspector-hidden {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(34rem, 62vh) auto auto;
   }

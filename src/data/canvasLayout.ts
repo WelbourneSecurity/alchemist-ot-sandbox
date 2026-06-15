@@ -9,6 +9,8 @@ export const ASSET_NODE_HEIGHT = 74;
 export const DEFAULT_VIEWPORT = { x: 210, y: 58, zoom: 0.74 };
 export const CANVAS_GRID_X = 48;
 export const CANVAS_GRID_Y = ZONE_ROW_HEIGHT;
+// Left edge for assets — keeps them clear of the Purdue zone-label gutter.
+export const ASSET_MIN_X = 48;
 
 export function zoneIndex(zoneId: ZoneId) {
   return Math.max(
@@ -28,13 +30,13 @@ export function inferZoneFromY(y: number): ZoneId {
 
 export function snapPointToZone(point: Point, zoneId: ZoneId): Point {
   return {
-    x: snapX(Math.max(-80, point.x - ASSET_NODE_WIDTH / 2)),
+    x: snapX(Math.max(ASSET_MIN_X, point.x - ASSET_NODE_WIDTH / 2)),
     y: assetYForZone(zoneId)
   };
 }
 
 export function snapX(x: number) {
-  return Math.max(-80, Math.round(x / CANVAS_GRID_X) * CANVAS_GRID_X);
+  return Math.max(ASSET_MIN_X, Math.round(x / CANVAS_GRID_X) * CANVAS_GRID_X);
 }
 
 export function snapAssetPosition(point: Point): Point {

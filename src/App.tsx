@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
-import { assetYForZone, inferZoneFromY, snapAssetPosition, snapPointToZone } from "./data/canvasLayout";
+import {
+  ASSET_NODE_WIDTH,
+  CANVAS_GRID_X,
+  assetYForZone,
+  inferZoneFromY,
+  snapAssetPosition,
+  snapPointToZone,
+  snapX
+} from "./data/canvasLayout";
 import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
@@ -129,12 +137,13 @@ export function App() {
     }
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; label: string } | null>(null);
+  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [commandOpen, setCommandOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
-  const { layout, togglePalette, toggleInspector, setDockHeight } = usePanelLayout();
+  const { layout, togglePalette, toggleDock, setDockHeight } = usePanelLayout();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -229,11 +238,14 @@ export function App() {
     (typeId: AssetTypeId, position?: Point) => {
       const type = getAssetType(typeId);
       const zone = position ? inferZoneFromY(position.y) : type.defaultZone;
-      const sameZoneCount = project.assets.filter((asset) => asset.zone === zone).length;
-      const fallbackPosition = snapAssetPosition({
-        x: 96 + sameZoneCount * 240,
-        y: assetYForZone(zone)
-      });
+      const occupied = new Set(
+        project.assets.filter((asset) => asset.zone === zone).map((asset) => snapX(asset.position.x))
+      );
+      let slotX = 96;
+      while (occupied.has(snapX(slotX))) {
+        slotX += ASSET_NODE_WIDTH + CANVAS_GRID_X;
+      }
+      const fallbackPosition = { x: snapX(slotX), y: assetYForZone(zone) };
       const asset = createAsset(typeId, position ? snapPointToZone(position, zone) : fallbackPosition, zone);
       commitProject((current) => ({ ...current, assets: [...current.assets, asset] }));
       setSelectedId(asset.id);
@@ -273,9 +285,10 @@ export function App() {
       }
 
       addConduit(connectSourceId, assetId);
+      // Stay in connect mode so several conduits can be wired in a row; clear
+      // the source so the next click picks a fresh one. Esc or toggling Connect
+      // off exits (see the keydown handler / toolbar).
       setConnectSourceId(null);
-      setConnectMode(false);
-      setCanvasMode("clean");
     },
     [addConduit, connectMode, connectSourceId]
   );
@@ -300,19 +313,7 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const removeSelected = useCallback(() => {
-    if (!selectedId) {
-      return;
-    }
-    commitProject((current) => ({
-      ...current,
-      assets: current.assets.filter((asset) => asset.id !== selectedId),
-      conduits: current.conduits.filter(
-        (conduit) => conduit.id !== selectedId && conduit.source !== selectedId && conduit.target !== selectedId
-      )
-    }));
-    setSelectedId(null);
-  }, [commitProject, selectedId]);
+  const renameAsset = useCallback((id: string, name: string) => updateAsset(id, { name }), [updateAsset]);
 
   const confirmSelection = useCallback(() => {
     setSelectedId(null);
@@ -371,17 +372,47 @@ export function App() {
     if (!pendingDelete) {
       return;
     }
-    removeSelected();
+    const ids = new Set(pendingDelete.ids);
+    commitProject((current) => ({
+      ...current,
+      assets: current.assets.filter((asset) => !ids.has(asset.id)),
+      conduits: current.conduits.filter(
+        (conduit) => !ids.has(conduit.id) && !ids.has(conduit.source) && !ids.has(conduit.target)
+      )
+    }));
     pushToast(`Deleted ${pendingDelete.label}`, "info");
+    setSelectedId(null);
+    setMultiSelectedIds([]);
     setPendingDelete(null);
-  }, [pendingDelete, removeSelected, pushToast]);
+  }, [pendingDelete, commitProject, pushToast]);
 
   const requestDelete = useCallback(() => {
+    if (multiSelectedIds.length > 1) {
+      setPendingDelete({ ids: multiSelectedIds, label: `${multiSelectedIds.length} assets` });
+      return;
+    }
     if (!selectedId) {
       return;
     }
-    setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
-  }, [selectedId, selectedAsset, selectedConduit]);
+    setPendingDelete({ ids: [selectedId], label: selectedAsset?.name || selectedConduit?.name || "this item" });
+  }, [multiSelectedIds, selectedId, selectedAsset, selectedConduit]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedAsset) {
+      return;
+    }
+    const clone: Asset = {
+      ...selectedAsset,
+      id: makeId("asset"),
+      name: `${selectedAsset.name} copy`,
+      position: snapAssetPosition({ x: selectedAsset.position.x + 96, y: selectedAsset.position.y }),
+      protocols: [...selectedAsset.protocols],
+      controls: { ...selectedAsset.controls }
+    };
+    commitProject((current) => ({ ...current, assets: [...current.assets, clone] }));
+    setSelectedId(clone.id);
+    pushToast("Asset duplicated", "info");
+  }, [selectedAsset, commitProject, pushToast]);
 
   useKeyboardShortcuts({
     onCommandPalette: () => setCommandOpen(true),
@@ -389,7 +420,8 @@ export function App() {
     onRedo: redo,
     onDelete: requestDelete,
     onToggleConnect: handleToggleConnectMode,
-    onShowShortcuts: () => setShortcutsOpen((open) => !open)
+    onShowShortcuts: () => setShortcutsOpen((open) => !open),
+    onDuplicate: duplicateSelected
   });
 
   const commands = useMemo<Command[]>(() => {
@@ -403,7 +435,7 @@ export function App() {
       { id: "connect", label: "Toggle connect mode", hint: "C", run: handleToggleConnectMode },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
-      { id: "inspector", label: layout.inspectorOpen ? "Collapse inspector" : "Expand inspector", run: toggleInspector },
+      { id: "dock", label: layout.dockOpen ? "Collapse analysis dock" : "Expand analysis dock", run: toggleDock },
       { id: "shortcuts", label: "Show keyboard shortcuts", hint: "?", run: () => setShortcutsOpen(true) },
       { id: "mode-clean", label: "Canvas: clean view", run: () => setCanvasMode("clean") },
       { id: "mode-protocol", label: "Canvas: protocol view", run: () => setCanvasMode("protocol") },
@@ -411,6 +443,9 @@ export function App() {
       { id: "mode-boundary", label: "Canvas: boundary view", run: () => setCanvasMode("boundary") },
       { id: "mode-path", label: "Canvas: attacker path view", run: () => setCanvasMode("reachability") }
     ];
+    if (selectedAsset) {
+      list.push({ id: "duplicate", label: "Duplicate selected asset", hint: "Ctrl+D", run: duplicateSelected });
+    }
     if (assessment.findings.length > 0) {
       list.push({
         id: "top-finding",
@@ -433,15 +468,17 @@ export function App() {
     handleExportSvg,
     handleToggleConnectMode,
     togglePalette,
-    toggleInspector,
+    toggleDock,
     layout.paletteOpen,
-    layout.inspectorOpen,
+    layout.dockOpen,
     assessment.findings,
     handleFindingSelect,
     history.length,
     future.length,
     undo,
-    redo
+    redo,
+    duplicateSelected,
+    selectedAsset
   ]);
 
   return (
@@ -472,9 +509,9 @@ export function App() {
           id="workspace"
           tabIndex={-1}
           className={`workspace-grid${layout.paletteOpen ? "" : " palette-collapsed"}${
-            layout.inspectorOpen ? "" : " inspector-collapsed"
+            selectedAsset || selectedConduit ? "" : " inspector-hidden"
           }`}
-          style={{ "--dock-height": `${layout.dockHeight}rem` } as CSSProperties}
+          style={{ "--dock-height": layout.dockOpen ? `${layout.dockHeight}rem` : "auto" } as CSSProperties}
           aria-label="OT network sandbox workspace"
         >
           {layout.paletteOpen ? (
@@ -505,10 +542,12 @@ export function App() {
             }}
             onToggleConnectMode={handleToggleConnectMode}
             onFindingSelect={handleFindingSelect}
+            onRenameAsset={renameAsset}
+            onSelectionChange={setMultiSelectedIds}
             onUndo={undo}
             onRedo={redo}
           />
-          {layout.inspectorOpen ? (
+          {selectedAsset || selectedConduit ? (
             <InspectorPanel
               project={project}
               asset={selectedAsset}
@@ -517,11 +556,9 @@ export function App() {
               onConduitChange={updateConduit}
               onDeleteSelected={requestDelete}
               onConfirmSelected={confirmSelection}
-              onCollapse={toggleInspector}
+              onCollapse={() => setSelectedId(null)}
             />
-          ) : (
-            <CollapsedRail panelClassName="inspector-panel" label="Inspector" side="right" onExpand={toggleInspector} />
-          )}
+          ) : null}
           <AnalysisPanel
             project={project}
             assessment={assessment}
@@ -537,6 +574,8 @@ export function App() {
             onPrintReport={() => window.print()}
             dockHeight={layout.dockHeight}
             onDockResize={setDockHeight}
+            dockOpen={layout.dockOpen}
+            onToggleDock={toggleDock}
           />
         </section>
       </main>

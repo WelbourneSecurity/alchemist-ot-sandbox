@@ -131,6 +131,9 @@ export function InspectorPanel({
               <option value="critical">Critical</option>
             </select>
           </label>
+          <details className="inspector-section">
+            <summary>Details &amp; metadata</summary>
+            <div className="inspector-section-body">
           <TextField label="Owner" value={asset.owner} onChange={(owner) => onAssetChange(asset.id, { owner })} />
           <div className="field-row">
             <TextField label="Manufacturer" value={asset.manufacturer} onChange={(manufacturer) => onAssetChange(asset.id, { manufacturer })} />
@@ -190,9 +193,13 @@ export function InspectorPanel({
             <span>Notes</span>
             <textarea value={asset.notes} onChange={(event) => onAssetChange(asset.id, { notes: event.target.value })} />
           </label>
+            </div>
+          </details>
 
+          <details className="inspector-section">
+            <summary>Security controls</summary>
+            <div className="inspector-section-body">
           <fieldset className="control-grid">
-            <legend>Security controls</legend>
             {controlLabels.map((control) => (
               <label className="toggle-row" key={control.key}>
                 <input
@@ -208,6 +215,8 @@ export function InspectorPanel({
               </label>
             ))}
           </fieldset>
+            </div>
+          </details>
 
           <button type="button" className="danger-button" onClick={onDeleteSelected}>
             <Trash2 size={16} />
@@ -249,6 +258,9 @@ export function InspectorPanel({
               <option value="bidirectional">Bidirectional</option>
             </select>
           </label>
+          <details className="inspector-section">
+            <summary>Advanced</summary>
+            <div className="inspector-section-body">
           <label className="field">
             <span>Control</span>
             <select value={conduit.control} onChange={(event) => onConduitChange(conduit.id, { control: event.target.value as ConduitControl })}>
@@ -338,6 +350,8 @@ export function InspectorPanel({
             <span>Notes</span>
             <textarea value={conduit.notes} onChange={(event) => onConduitChange(conduit.id, { notes: event.target.value })} />
           </label>
+            </div>
+          </details>
           <button type="button" className="text-button primary confirm-button" onClick={onConfirmSelected}>
             Confirm conduit
           </button>

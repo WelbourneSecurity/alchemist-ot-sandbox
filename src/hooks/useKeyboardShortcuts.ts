@@ -7,6 +7,7 @@ export interface ShortcutHandlers {
   onDelete: () => void;
   onToggleConnect: () => void;
   onShowShortcuts: () => void;
+  onDuplicate: () => void;
 }
 
 function isTypingTarget(target: EventTarget | null) {
@@ -53,6 +54,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (mod && (event.key === "y" || event.key === "Y")) {
         event.preventDefault();
         current.onRedo();
+        return;
+      }
+      if (mod && (event.key === "d" || event.key === "D")) {
+        event.preventDefault();
+        current.onDuplicate();
         return;
       }
       if (event.key === "Delete" || event.key === "Backspace") {
