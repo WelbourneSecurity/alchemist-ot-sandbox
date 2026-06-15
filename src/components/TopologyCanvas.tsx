@@ -185,7 +185,7 @@ function TopologyCanvasInner({
 }: TopologyCanvasProps) {
   const reactFlow = useReactFlow();
   const [isDragging, setIsDragging] = useState(false);
-  const [hudOpen, setHudOpen] = useState(true);
+  const [hudOpen, setHudOpen] = useState(false);
   const verdict = buildVerdict(assessment);
   const topFinding = assessment.findings[0];
   const highlightedSet = useMemo(() => new Set(highlightedConduitIds), [highlightedConduitIds]);

@@ -9,7 +9,7 @@ export interface PanelLayout {
 const STORAGE_KEY = "alchemist-panel-layout";
 const MIN_DOCK = 7;
 const MAX_DOCK = 42;
-const DEFAULT_LAYOUT: PanelLayout = { paletteOpen: true, inspectorOpen: true, dockHeight: 16 };
+const DEFAULT_LAYOUT: PanelLayout = { paletteOpen: true, inspectorOpen: true, dockHeight: 12 };
 
 function clampDock(value: number) {
   if (!Number.isFinite(value)) {
