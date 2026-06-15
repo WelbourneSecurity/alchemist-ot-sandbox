@@ -2,13 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
 import {
-  ASSET_NODE_WIDTH,
-  CANVAS_GRID_X,
   assetYForZone,
   inferZoneFromY,
+  resolveAssetX,
   snapAssetPosition,
-  snapPointToZone,
-  snapX
+  snapPointToZone
 } from "./data/canvasLayout";
 import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
@@ -238,15 +236,9 @@ export function App() {
     (typeId: AssetTypeId, position?: Point) => {
       const type = getAssetType(typeId);
       const zone = position ? inferZoneFromY(position.y) : type.defaultZone;
-      const occupied = new Set(
-        project.assets.filter((asset) => asset.zone === zone).map((asset) => snapX(asset.position.x))
-      );
-      let slotX = 96;
-      while (occupied.has(snapX(slotX))) {
-        slotX += ASSET_NODE_WIDTH + CANVAS_GRID_X;
-      }
-      const fallbackPosition = { x: snapX(slotX), y: assetYForZone(zone) };
-      const asset = createAsset(typeId, position ? snapPointToZone(position, zone) : fallbackPosition, zone);
+      const desiredX = position ? snapPointToZone(position, zone).x : 96;
+      const x = resolveAssetX(desiredX, zone, null, project.assets);
+      const asset = createAsset(typeId, { x, y: assetYForZone(zone) }, zone);
       commitProject((current) => ({ ...current, assets: [...current.assets, asset] }));
       setSelectedId(asset.id);
     },
