@@ -415,6 +415,13 @@ function TopologyCanvasInner({
     [onCreateAsset, reactFlow]
   );
 
+  // Stable identity is required: React Flow re-invokes onSelectionChange whenever the
+  // handler reference changes, so an inline arrow here causes an infinite render loop.
+  const handleSelectionChange = useCallback(
+    ({ nodes }: { nodes: Node[] }) => onSelectionChange(nodes.map((node) => node.id)),
+    [onSelectionChange]
+  );
+
   return (
     <section
       className="canvas-shell"
@@ -529,7 +536,7 @@ function TopologyCanvasInner({
               onSelect(null);
             }
           }}
-          onSelectionChange={({ nodes }) => onSelectionChange(nodes.map((node) => node.id))}
+          onSelectionChange={handleSelectionChange}
           defaultViewport={DEFAULT_VIEWPORT}
           minZoom={0.45}
           maxZoom={1.5}

@@ -2449,6 +2449,54 @@ button.verdict-finding:hover {
   outline-offset: 3px;
 }
 
+.app-error {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--bg);
+}
+
+.app-error-card {
+  width: min(34rem, 100%);
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.4rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.app-error-card strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.app-error-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.app-error-card pre {
+  margin: 0;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-error-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 1280px) {
   .app-header {
     grid-template-columns: 1fr minmax(20rem, 34rem);
