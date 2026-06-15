@@ -425,6 +425,12 @@ function TopologyCanvasInner({
       </div>
 
       <div className={`react-flow-frame mode-${canvasMode} ${isDragging ? "is-dragging" : ""}`}>
+        {connectMode ? (
+          <div className="canvas-connect-banner" role="status">
+            {connectSourceId ? "Click a target asset to wire the conduit" : "Click a source asset to start a conduit"}
+            <span>· Esc to stop</span>
+          </div>
+        ) : null}
         <aside className={`canvas-hud${hudOpen ? "" : " is-collapsed"}`} aria-label="Advisory rating summary">
           <button
             type="button"

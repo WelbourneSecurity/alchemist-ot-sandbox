@@ -2,7 +2,7 @@ import { AlertTriangle, FileText, Grid2X2, ListFilter, Printer, Route, ShieldChe
 import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
-import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
+import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity } from "../models/types";
 import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
@@ -63,6 +63,17 @@ export function AnalysisPanel({
   onDockResize
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
+  const [includeDocs, setIncludeDocs] = useState(false);
+  const [severityOn, setSeverityOn] = useState<Record<Severity, boolean>>({
+    critical: true,
+    high: true,
+    medium: true,
+    low: true
+  });
+  const visibleFindings = assessment.findings.filter(
+    (finding) => (includeDocs || finding.category !== "documentation") && severityOn[finding.severity]
+  );
+  const hiddenFindingCount = assessment.findings.length - visibleFindings.length;
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -239,8 +250,25 @@ export function AnalysisPanel({
 
       {activeTab === "findings" ? (
         <div className="analysis-content findings-list">
-          {assessment.findings.length > 0 ? (
-            assessment.findings.slice(0, 12).map((finding) => (
+          <div className="findings-filters">
+            {(["critical", "high", "medium", "low"] as Severity[]).map((sev) => (
+              <button
+                key={sev}
+                type="button"
+                className={`sev-chip sev-${sev}${severityOn[sev] ? " is-on" : ""}`}
+                aria-pressed={severityOn[sev]}
+                onClick={() => setSeverityOn((current) => ({ ...current, [sev]: !current[sev] }))}
+              >
+                {sev}
+              </button>
+            ))}
+            <label className="docs-toggle">
+              <input type="checkbox" checked={includeDocs} onChange={(event) => setIncludeDocs(event.target.checked)} />
+              Documentation gaps
+            </label>
+          </div>
+          {visibleFindings.length > 0 ? (
+            visibleFindings.map((finding) => (
               <article
                 className={`finding severity-${finding.severity} ${activeFindingId === finding.id ? "active" : ""}`}
                 key={finding.id}
@@ -257,8 +285,17 @@ export function AnalysisPanel({
               </article>
             ))
           ) : (
-            <p className="muted">No findings detected in the declared model.</p>
+            <p className="muted">
+              {assessment.findings.length === 0
+                ? "No findings detected in the declared model."
+                : "No findings match the current filters."}
+            </p>
           )}
+          {hiddenFindingCount > 0 && visibleFindings.length > 0 ? (
+            <p className="findings-hidden-note">
+              {hiddenFindingCount} finding{hiddenFindingCount === 1 ? "" : "s"} hidden by filters.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

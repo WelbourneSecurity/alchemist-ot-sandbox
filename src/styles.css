@@ -1419,12 +1419,38 @@ body.light-mode .asset-node {
 }
 
 .flow-handle {
-  width: 0.68rem;
-  height: 0.68rem;
+  width: 0.9rem;
+  height: 0.9rem;
   border: 1px solid var(--bg);
   background: color-mix(in srgb, var(--accent) 82%, var(--zone-color));
-  opacity: 0.42;
-  transition: opacity 140ms ease, background-color 140ms ease;
+  opacity: 0.6;
+  transition: opacity 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.flow-handle:hover {
+  transform: scale(1.25);
+}
+
+.canvas-connect-banner {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--signal);
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.canvas-connect-banner span {
+  color: var(--muted);
 }
 
 .asset-node:hover .flow-handle,
@@ -2082,6 +2108,62 @@ button.verdict-finding:hover {
 .findings-list {
   display: grid;
   gap: 0.55rem;
+}
+
+.findings-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.sev-chip {
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.55rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  transition: opacity var(--motion) var(--ease), border-color var(--motion) var(--ease), color var(--motion) var(--ease);
+}
+
+.sev-chip.is-on {
+  opacity: 1;
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.sev-chip.sev-critical.is-on,
+.sev-chip.sev-high.is-on {
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 55%, var(--line));
+}
+
+.docs-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.docs-toggle input {
+  width: 0.9rem;
+  height: 0.9rem;
+  accent-color: var(--accent);
+}
+
+.findings-hidden-note {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .finding {

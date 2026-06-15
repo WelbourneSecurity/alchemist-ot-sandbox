@@ -273,9 +273,10 @@ export function App() {
       }
 
       addConduit(connectSourceId, assetId);
+      // Stay in connect mode so several conduits can be wired in a row; clear
+      // the source so the next click picks a fresh one. Esc or toggling Connect
+      // off exits (see the keydown handler / toolbar).
       setConnectSourceId(null);
-      setConnectMode(false);
-      setCanvasMode("clean");
     },
     [addConduit, connectMode, connectSourceId]
   );
