@@ -58,6 +58,8 @@ interface TopologyCanvasProps {
   onCanvasModeChange: (mode: CanvasMode) => void;
   onToggleConnectMode: () => void;
   onFindingSelect: (finding: Finding) => void;
+  onRenameAsset: (id: string, name: string) => void;
+  onSelectionChange: (ids: string[]) => void;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -68,6 +70,7 @@ type AssetNodeData = {
   highlighted: boolean;
   connectMode: boolean;
   connectSource: boolean;
+  onRename: (id: string, name: string) => void;
 };
 
 type AssetFlowNode = Node<AssetNodeData, "asset">;
@@ -75,6 +78,16 @@ type AssetFlowNode = Node<AssetNodeData, "asset">;
 function AssetNode({ data }: NodeProps<AssetFlowNode>) {
   const type = getAssetType(data.asset.type);
   const zone = getZone(data.asset.zone);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(data.asset.name);
+
+  const commitRename = () => {
+    const next = draft.trim();
+    if (next && next !== data.asset.name) {
+      data.onRename(data.asset.id, next);
+    }
+    setEditing(false);
+  };
 
   return (
     <div
@@ -89,7 +102,37 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
         <AssetGlyph icon={type.icon} size={17} />
       </div>
       <div className="asset-node-body">
-        <strong>{data.asset.name}</strong>
+        {editing ? (
+          <input
+            className="nodrag asset-node-rename"
+            value={draft}
+            autoFocus
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={commitRename}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitRename();
+              } else if (event.key === "Escape") {
+                event.preventDefault();
+                setDraft(data.asset.name);
+                setEditing(false);
+              }
+            }}
+          />
+        ) : (
+          <strong
+            title="Double-click to rename"
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              setDraft(data.asset.name);
+              setEditing(true);
+            }}
+          >
+            {data.asset.name}
+          </strong>
+        )}
         <span>{type.label}</span>
         <small>{data.asset.ipAddress || data.asset.vlan || "metadata incomplete"}</small>
       </div>
@@ -181,6 +224,8 @@ function TopologyCanvasInner({
   onToggleConnectMode,
   onFindingSelect,
   onUndo,
+  onRenameAsset,
+  onSelectionChange,
   onRedo
 }: TopologyCanvasProps) {
   const reactFlow = useReactFlow();
@@ -225,11 +270,12 @@ function TopologyCanvasInner({
           selected: selectedId === asset.id,
           highlighted: highlightedAssets.has(asset.id),
           connectMode,
-          connectSource: connectSourceId === asset.id
+          connectSource: connectSourceId === asset.id,
+          onRename: onRenameAsset
         },
         zIndex: highlightedAssets.has(asset.id) ? 10 : 5
       })),
-    [connectMode, connectSourceId, highlightedAssets, project.assets, selectedId]
+    [connectMode, connectSourceId, highlightedAssets, onRenameAsset, project.assets, selectedId]
   );
 
   const [flowNodes, setFlowNodes] = useNodesState<AssetFlowNode>(projectNodes);
@@ -483,6 +529,7 @@ function TopologyCanvasInner({
               onSelect(null);
             }
           }}
+          onSelectionChange={({ nodes }) => onSelectionChange(nodes.map((node) => node.id))}
           defaultViewport={DEFAULT_VIEWPORT}
           minZoom={0.45}
           maxZoom={1.5}

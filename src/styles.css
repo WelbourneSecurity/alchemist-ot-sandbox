@@ -1404,6 +1404,21 @@ body.light-mode .asset-node {
   line-height: 1.15;
 }
 
+.asset-node-rename {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.15;
+  padding: 0.02rem 0.2rem;
+  outline: none;
+}
+
 .asset-node-body span {
   color: var(--muted);
   font-size: 0.68rem;

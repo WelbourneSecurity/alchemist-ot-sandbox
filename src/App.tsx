@@ -137,7 +137,8 @@ export function App() {
     }
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; label: string } | null>(null);
+  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [commandOpen, setCommandOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -312,19 +313,7 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const removeSelected = useCallback(() => {
-    if (!selectedId) {
-      return;
-    }
-    commitProject((current) => ({
-      ...current,
-      assets: current.assets.filter((asset) => asset.id !== selectedId),
-      conduits: current.conduits.filter(
-        (conduit) => conduit.id !== selectedId && conduit.source !== selectedId && conduit.target !== selectedId
-      )
-    }));
-    setSelectedId(null);
-  }, [commitProject, selectedId]);
+  const renameAsset = useCallback((id: string, name: string) => updateAsset(id, { name }), [updateAsset]);
 
   const confirmSelection = useCallback(() => {
     setSelectedId(null);
@@ -383,17 +372,30 @@ export function App() {
     if (!pendingDelete) {
       return;
     }
-    removeSelected();
+    const ids = new Set(pendingDelete.ids);
+    commitProject((current) => ({
+      ...current,
+      assets: current.assets.filter((asset) => !ids.has(asset.id)),
+      conduits: current.conduits.filter(
+        (conduit) => !ids.has(conduit.id) && !ids.has(conduit.source) && !ids.has(conduit.target)
+      )
+    }));
     pushToast(`Deleted ${pendingDelete.label}`, "info");
+    setSelectedId(null);
+    setMultiSelectedIds([]);
     setPendingDelete(null);
-  }, [pendingDelete, removeSelected, pushToast]);
+  }, [pendingDelete, commitProject, pushToast]);
 
   const requestDelete = useCallback(() => {
+    if (multiSelectedIds.length > 1) {
+      setPendingDelete({ ids: multiSelectedIds, label: `${multiSelectedIds.length} assets` });
+      return;
+    }
     if (!selectedId) {
       return;
     }
-    setPendingDelete({ id: selectedId, label: selectedAsset?.name || selectedConduit?.name || "this item" });
-  }, [selectedId, selectedAsset, selectedConduit]);
+    setPendingDelete({ ids: [selectedId], label: selectedAsset?.name || selectedConduit?.name || "this item" });
+  }, [multiSelectedIds, selectedId, selectedAsset, selectedConduit]);
 
   const duplicateSelected = useCallback(() => {
     if (!selectedAsset) {
@@ -540,6 +542,8 @@ export function App() {
             }}
             onToggleConnectMode={handleToggleConnectMode}
             onFindingSelect={handleFindingSelect}
+            onRenameAsset={renameAsset}
+            onSelectionChange={setMultiSelectedIds}
             onUndo={undo}
             onRedo={redo}
           />
