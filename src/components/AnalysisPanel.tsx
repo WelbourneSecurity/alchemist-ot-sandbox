@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  Crosshair,
   FileText,
   Grid2X2,
   Layers,
@@ -16,6 +17,7 @@ import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
 import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity, ZoneId } from "../models/types";
 import { assessSecurityLevels, foundationalRequirements } from "../engine/securityLevels";
+import { icsTactics, icsTechniques } from "../data/attackIcs";
 import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
@@ -46,12 +48,13 @@ const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "rating", label: "Security Rating", Icon: ShieldCheck },
   { id: "levels", label: "Security Levels", Icon: Layers },
   { id: "findings", label: "Findings", Icon: AlertTriangle },
+  { id: "attack", label: "ATT&CK Exposure", Icon: Crosshair },
   { id: "flows", label: "Flow Table", Icon: ListFilter },
   { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 },
   { id: "report", label: "Report", Icon: FileText }
 ];
 
-type TabId = "reachability" | "rating" | "levels" | "findings" | "flows" | "matrix" | "report";
+type TabId = "reachability" | "rating" | "levels" | "findings" | "attack" | "flows" | "matrix" | "report";
 
 function directionLabel(direction: string) {
   if (direction === "source-to-target") {
@@ -95,6 +98,7 @@ export function AnalysisPanel({
   );
   const hiddenFindingCount = assessment.findings.length - visibleFindings.length;
   const securityLevels = assessSecurityLevels(project, project.zoneTargets);
+  const exposedTechniques = new Set(assessment.findings.flatMap((finding) => finding.techniques ?? []));
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -396,6 +400,38 @@ export function AnalysisPanel({
               {hiddenFindingCount} finding{hiddenFindingCount === 1 ? "" : "s"} hidden by filters.
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === "attack" ? (
+        <div className="analysis-content attack-view">
+          <div className="attack-matrix">
+            {icsTactics.map((tactic) => {
+              const techniques = icsTechniques.filter((technique) => technique.tactic === tactic.id);
+              if (techniques.length === 0) {
+                return null;
+              }
+              return (
+                <div className="attack-column" key={tactic.id}>
+                  <h3>{tactic.name}</h3>
+                  {techniques.map((technique) => (
+                    <div
+                      className={`attack-tech${exposedTechniques.has(technique.id) ? " is-exposed" : ""}`}
+                      key={technique.id}
+                      title={`${technique.id} ${technique.name}`}
+                    >
+                      <span className="attack-tech-id">{technique.id}</span>
+                      <span className="attack-tech-name">{technique.name}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <p className="muted">
+            Techniques in red are plausibly enabled by the current findings. A curated slice of MITRE ATT&amp;CK for ICS
+            mapped from the assessment — not a claim of full coverage.
+          </p>
         </div>
       ) : null}
 
