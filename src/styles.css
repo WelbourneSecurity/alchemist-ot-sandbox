@@ -2338,6 +2338,73 @@ button.verdict-finding:hover {
   overflow: auto;
 }
 
+.sl-view {
+  overflow: auto;
+}
+
+.sl-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.sl-table th,
+.sl-table td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+}
+
+.sl-table thead th {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.sl-table tbody th {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sl-table .sl-a {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.sl-table .sl-a-below {
+  color: var(--signal);
+}
+
+.sl-table .sl-gap {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.sl-table tr.sl-below .sl-gap {
+  color: var(--signal);
+}
+
+.sl-target-select {
+  width: 100%;
+  min-width: 4rem;
+  font-size: 0.74rem;
+  padding: 0.15rem 0.3rem;
+}
+
+.fr-cell {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.fr-cell.fr-limiting {
+  color: var(--signal);
+  font-weight: 700;
+}
+
 .flow-table,
 .zone-matrix {
   width: 100%;
