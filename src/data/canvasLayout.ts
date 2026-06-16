@@ -46,3 +46,40 @@ export function snapAssetPosition(point: Point): Point {
     y: assetYForZone(zone)
   };
 }
+
+const ASSET_MIN_GAP = 24;
+
+/**
+ * Returns a grid-snapped x near `desiredX` that does not overlap any other asset in the
+ * same zone (assets share a y per zone, so overlap is purely horizontal). Searches outward
+ * from the desired column, preferring the nearest free slot. Used on add and on drop so
+ * assets can never sit on top of each other.
+ */
+export function resolveAssetX(
+  desiredX: number,
+  zoneId: ZoneId,
+  movingId: string | null,
+  assets: Array<{ id: string; zone: ZoneId; position: Point }>
+): number {
+  const others = assets
+    .filter((asset) => asset.id !== movingId && asset.zone === zoneId)
+    .map((asset) => asset.position.x);
+  const minSeparation = ASSET_NODE_WIDTH + ASSET_MIN_GAP;
+  const overlaps = (x: number) => others.some((otherX) => Math.abs(x - otherX) < minSeparation);
+
+  const start = snapX(desiredX);
+  if (!overlaps(start)) {
+    return start;
+  }
+  for (let delta = CANVAS_GRID_X; delta <= 8000; delta += CANVAS_GRID_X) {
+    const right = snapX(start + delta);
+    if (!overlaps(right)) {
+      return right;
+    }
+    const left = snapX(start - delta);
+    if (left >= ASSET_MIN_X && !overlaps(left)) {
+      return left;
+    }
+  }
+  return start;
+}

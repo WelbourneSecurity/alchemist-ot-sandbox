@@ -28,6 +28,7 @@ import {
   ZONE_BAND_Y_OFFSET,
   ZONE_ROW_HEIGHT,
   inferZoneFromY,
+  resolveAssetX,
   snapAssetPosition,
   zoneIndex
 } from "../data/canvasLayout";
@@ -380,12 +381,17 @@ function TopologyCanvasInner({
   const commitNodePosition = useCallback<OnNodeDrag<AssetFlowNode>>(
     (_, node) => {
       setIsDragging(false);
-      const position = snapAssetPosition(node.position);
-      const zone = inferZoneFromY(position.y + ASSET_NODE_HEIGHT / 2);
-      onProjectChange((current) => ({
-        ...current,
-        assets: current.assets.map((asset) => (asset.id === node.id ? { ...asset, position, zone } : asset))
-      }));
+      const snapped = snapAssetPosition(node.position);
+      const zone = inferZoneFromY(snapped.y + ASSET_NODE_HEIGHT / 2);
+      onProjectChange((current) => {
+        const x = resolveAssetX(snapped.x, zone, node.id, current.assets);
+        return {
+          ...current,
+          assets: current.assets.map((asset) =>
+            asset.id === node.id ? { ...asset, position: { x, y: snapped.y }, zone } : asset
+          )
+        };
+      });
     },
     [onProjectChange]
   );
