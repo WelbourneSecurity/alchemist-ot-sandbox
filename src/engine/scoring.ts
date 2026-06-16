@@ -1,4 +1,5 @@
 import { categoryLabels, getAssetType, getZone, standardReferences } from "../data/catalog";
+import { techniquesForCategory } from "../data/attackIcs";
 import { findReachability } from "./reachability";
 import { assessSecurityLevels, foundationalRequirements } from "./securityLevels";
 import type { Asset, Conduit, Finding, OtProject, ScoreCategory, SecurityAssessment, Severity } from "../models/types";
@@ -467,6 +468,8 @@ export function assessProject(project: OtProject): SecurityAssessment {
     overallScore,
     band: scoreBand(overallScore),
     categoryScores,
-    findings: findings.sort((a, b) => severityDeduction[b.severity] - severityDeduction[a.severity]),
+    findings: findings
+      .map((finding) => ({ ...finding, techniques: techniquesForCategory(finding.category) }))
+      .sort((a, b) => severityDeduction[b.severity] - severityDeduction[a.severity]),
   };
 }

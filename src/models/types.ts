@@ -199,6 +199,7 @@ export interface Finding {
   affectedAssetIds: string[];
   affectedConduitIds: string[];
   references: string[];
+  techniques?: string[];
 }
 
 export interface CategoryScore {
