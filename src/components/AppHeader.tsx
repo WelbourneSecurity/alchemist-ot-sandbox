@@ -55,7 +55,12 @@ export function AppHeader({
 
   return (
     <header className="app-header">
-      <div className="brand-block">
+      <a
+        className="brand-block"
+        href="https://welbournesecurity.com"
+        title="Back to welbournesecurity.com"
+        aria-label="Welbourne Security — back to main site"
+      >
         <div className="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" focusable="false">
             <circle cx="24" cy="24" r="18" className="brand-mark-ring" />
@@ -70,7 +75,7 @@ export function AppHeader({
           <h1>Welbourne Security</h1>
           <p>Alchemist OT Sandbox</p>
         </div>
-      </div>
+      </a>
 
       <div className="project-controls">
         <label className="project-name-field">
