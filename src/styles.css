@@ -2461,6 +2461,91 @@ button.verdict-finding:hover {
   line-height: 1.25;
 }
 
+.risk-view {
+  display: grid;
+  gap: 1.1rem;
+  align-content: start;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 2.4rem);
+  grid-auto-rows: 2.4rem;
+  gap: 2px;
+}
+
+.risk-cell {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.risk-cell-low {
+  background: transparent;
+}
+
+.risk-cell-medium {
+  background: color-mix(in srgb, var(--signal) 16%, transparent);
+}
+
+.risk-cell-high {
+  background: color-mix(in srgb, var(--signal) 40%, transparent);
+}
+
+.risk-cell-critical {
+  background: color-mix(in srgb, var(--signal) 68%, transparent);
+}
+
+.risk-axes {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+}
+
+.risk-register h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+}
+
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.risk-table th,
+.risk-table td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+}
+
+.risk-table tbody th {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.risk-band-chip {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--line-strong);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.risk-band-chip.risk-chip-high,
+.risk-band-chip.risk-chip-critical {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
 .flow-table,
 .zone-matrix {
   width: 100%;
