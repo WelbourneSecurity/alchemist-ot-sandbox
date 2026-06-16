@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Crosshair,
   FileText,
+  Flame,
   Grid2X2,
   Layers,
   ListFilter,
@@ -18,6 +19,7 @@ import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
 import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity, ZoneId } from "../models/types";
 import { assessSecurityLevels, foundationalRequirements } from "../engine/securityLevels";
 import { icsTactics, icsTechniques } from "../data/attackIcs";
+import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
 import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
@@ -49,12 +51,13 @@ const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "levels", label: "Security Levels", Icon: Layers },
   { id: "findings", label: "Findings", Icon: AlertTriangle },
   { id: "attack", label: "ATT&CK Exposure", Icon: Crosshair },
+  { id: "risk", label: "Risk", Icon: Flame },
   { id: "flows", label: "Flow Table", Icon: ListFilter },
   { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 },
   { id: "report", label: "Report", Icon: FileText }
 ];
 
-type TabId = "reachability" | "rating" | "levels" | "findings" | "attack" | "flows" | "matrix" | "report";
+type TabId = "reachability" | "rating" | "levels" | "findings" | "attack" | "risk" | "flows" | "matrix" | "report";
 
 function directionLabel(direction: string) {
   if (direction === "source-to-target") {
@@ -99,6 +102,7 @@ export function AnalysisPanel({
   const hiddenFindingCount = assessment.findings.length - visibleFindings.length;
   const securityLevels = assessSecurityLevels(project, project.zoneTargets);
   const exposedTechniques = new Set(assessment.findings.flatMap((finding) => finding.techniques ?? []));
+  const risk = assessRisk(project, assessment.findings);
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -432,6 +436,58 @@ export function AnalysisPanel({
             Techniques in red are plausibly enabled by the current findings. A curated slice of MITRE ATT&amp;CK for ICS
             mapped from the assessment — not a claim of full coverage.
           </p>
+        </div>
+      ) : null}
+
+      {activeTab === "risk" ? (
+        <div className="analysis-content risk-view">
+          <div className="risk-heatmap">
+            <div className="risk-grid">
+              {Array.from({ length: RISK_SCALE * RISK_SCALE }, (_, index) => {
+                const consequence = RISK_SCALE - Math.floor(index / RISK_SCALE);
+                const likelihood = (index % RISK_SCALE) + 1;
+                const count = risk.matrix[consequence - 1][likelihood - 1];
+                const band = riskBand(consequence * likelihood);
+                return (
+                  <div
+                    className={`risk-cell risk-cell-${band}`}
+                    key={index}
+                    title={`Consequence ${consequence} × Likelihood ${likelihood} = ${consequence * likelihood} (${band})`}
+                  >
+                    {count > 0 ? count : ""}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="muted risk-axes">Rows: consequence (top = severe) · Columns: likelihood (right = likely)</p>
+          </div>
+          <div className="risk-register">
+            <h3>Risk register</h3>
+            <table className="risk-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Consequence</th>
+                  <th>Likelihood</th>
+                  <th>Score</th>
+                  <th>Band</th>
+                </tr>
+              </thead>
+              <tbody>
+                {risk.assets.slice(0, 12).map((item) => (
+                  <tr key={item.assetId}>
+                    <th>{assetName(item.assetId)}</th>
+                    <td>{item.consequence}</td>
+                    <td>{item.likelihood}</td>
+                    <td>{item.score}</td>
+                    <td>
+                      <span className={`risk-band-chip risk-chip-${item.band}`}>{item.band}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
 

@@ -114,6 +114,7 @@ export interface Asset {
   vlan: string;
   protocols: string[];
   criticality: Criticality;
+  consequence?: number;
   owner: string;
   notes: string;
   position: Point;
