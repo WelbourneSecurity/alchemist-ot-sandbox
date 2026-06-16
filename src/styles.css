@@ -160,6 +160,13 @@ h3 {
   gap: 0.9rem;
   align-items: center;
   min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-block:hover .brand-mark,
+.brand-block:focus-visible .brand-mark {
+  border-color: var(--accent);
 }
 
 .brand-mark {
