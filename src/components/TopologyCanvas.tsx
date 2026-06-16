@@ -18,7 +18,7 @@ import {
   useReactFlow
 } from "@xyflow/react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ASSET_NODE_HEIGHT,
   ASSET_NODE_WIDTH,
@@ -28,15 +28,27 @@ import {
   ZONE_BAND_Y_OFFSET,
   ZONE_ROW_HEIGHT,
   inferZoneFromY,
-  resolveAssetX,
+  projectPurduePositions,
   snapAssetPosition,
+  snapToGrid,
+  subnetBoundingBoxes,
   zoneIndex
 } from "../data/canvasLayout";
 import { assetTypes, getAssetType, getZone, zones } from "../data/catalog";
 import { resolveProtocolFamily } from "../data/protocols";
 import { routeOrthogonalConduit } from "../engine/conduitRouting";
 import { conduitColor, conduitOpacity, conduitParallelOffsets, conduitSeverity } from "../engine/conduitVisuals";
-import type { Asset, AssetTypeId, CanvasMode, Finding, OtProject, Point, SecurityAssessment, ZoneId } from "../models/types";
+import type {
+  Asset,
+  AssetTypeId,
+  CanvasMode,
+  Finding,
+  LayoutMode,
+  OtProject,
+  Point,
+  SecurityAssessment,
+  ZoneId
+} from "../models/types";
 import { buildVerdict } from "../lib/verdict";
 import { AssetGlyph } from "./AssetGlyph";
 import { ScoreGauge } from "./ScoreGauge";
@@ -47,6 +59,7 @@ interface TopologyCanvasProps {
   selectedId: string | null;
   highlightedConduitIds: string[];
   canvasMode: CanvasMode;
+  layoutMode: LayoutMode;
   connectMode: boolean;
   connectSourceId: string | null;
   canUndo: boolean;
@@ -57,6 +70,8 @@ interface TopologyCanvasProps {
   onCreateConduit: (source: string, target: string) => void;
   onProjectChange: (updater: OtProject | ((current: OtProject) => OtProject), recordHistory?: boolean) => void;
   onCanvasModeChange: (mode: CanvasMode) => void;
+  onLayoutModeChange: (mode: LayoutMode) => void;
+  onManageSubnets: () => void;
   onToggleConnectMode: () => void;
   onFindingSelect: (finding: Finding) => void;
   onRenameAsset: (id: string, name: string) => void;
@@ -163,12 +178,13 @@ interface ConduitOverlayItem {
   dash?: string;
 }
 
-function assetWithLivePosition(asset: Asset, position: Point): Asset {
-  return {
-    ...asset,
-    position,
-    zone: inferZoneFromY(position.y + ASSET_NODE_HEIGHT / 2)
-  };
+function assetWithLivePosition(asset: Asset, position: Point, layoutMode: LayoutMode): Asset {
+  // In the Purdue projection a node's lane (y) defines its zone, so derive it live while
+  // dragging. In the free network layout the zone is an explicit attribute, untouched by y.
+  if (layoutMode === "purdue") {
+    return { ...asset, position, zone: inferZoneFromY(position.y + ASSET_NODE_HEIGHT / 2) };
+  }
+  return { ...asset, position };
 }
 
 function boundaryYsBetweenZones(sourceZone: ZoneId, targetZone: ZoneId) {
@@ -212,6 +228,7 @@ function TopologyCanvasInner({
   selectedId,
   highlightedConduitIds,
   canvasMode,
+  layoutMode,
   connectMode,
   connectSourceId,
   canUndo,
@@ -222,6 +239,8 @@ function TopologyCanvasInner({
   onCreateConduit,
   onProjectChange,
   onCanvasModeChange,
+  onLayoutModeChange,
+  onManageSubnets,
   onToggleConnectMode,
   onFindingSelect,
   onUndo,
@@ -229,6 +248,7 @@ function TopologyCanvasInner({
   onSelectionChange,
   onRedo
 }: TopologyCanvasProps) {
+  const isPurdue = layoutMode === "purdue";
   const reactFlow = useReactFlow();
   const [isDragging, setIsDragging] = useState(false);
   const [hudOpen, setHudOpen] = useState(false);
@@ -254,12 +274,19 @@ function TopologyCanvasInner({
     return ids;
   }, [connectSourceId, focusedConduitIds, project.conduits, selectedId]);
 
+  // In Purdue mode the node positions are a pure projection of `zone`; the stored free
+  // `position` is never read for layout, so toggling back to the network view is lossless.
+  const purduePositions = useMemo(
+    () => (isPurdue ? projectPurduePositions(project.assets) : null),
+    [isPurdue, project.assets]
+  );
+
   const projectNodes = useMemo<AssetFlowNode[]>(
     () =>
       project.assets.map((asset) => ({
         id: asset.id,
         type: "asset",
-        position: asset.position,
+        position: purduePositions?.get(asset.id) ?? asset.position,
         width: ASSET_NODE_WIDTH,
         height: ASSET_NODE_HEIGHT,
         style: {
@@ -276,7 +303,7 @@ function TopologyCanvasInner({
         },
         zIndex: highlightedAssets.has(asset.id) ? 10 : 5
       })),
-    [connectMode, connectSourceId, highlightedAssets, onRenameAsset, project.assets, selectedId]
+    [connectMode, connectSourceId, highlightedAssets, onRenameAsset, project.assets, purduePositions, selectedId]
   );
 
   const [flowNodes, setFlowNodes] = useNodesState<AssetFlowNode>(projectNodes);
@@ -285,13 +312,30 @@ function TopologyCanvasInner({
     setFlowNodes(projectNodes);
   }, [projectNodes, setFlowNodes]);
 
+  // Switching layout reflows every node (free positions <-> packed Purdue lanes), so refit the
+  // view to the new arrangement. Skip the first run to preserve the default viewport on load.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => void reactFlow.fitView({ padding: 0.16, duration: 320 }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [layoutMode, reactFlow]);
+
   const liveAssets = useMemo(() => {
     const livePositions = new Map(flowNodes.map((node) => [node.id, node.position]));
     return project.assets.map((asset) => {
       const position = livePositions.get(asset.id);
-      return position ? assetWithLivePosition(asset, position) : asset;
+      return position ? assetWithLivePosition(asset, position, layoutMode) : asset;
     });
-  }, [flowNodes, project.assets]);
+  }, [flowNodes, layoutMode, project.assets]);
+
+  const subnetBoxes = useMemo(
+    () => (isPurdue ? [] : subnetBoundingBoxes(liveAssets, project.subnets ?? [])),
+    [isPurdue, liveAssets, project.subnets]
+  );
 
   const conduitOverlayItems = useMemo<ConduitOverlayItem[]>(() => {
     const assets = new Map(liveAssets.map((asset) => [asset.id, asset]));
@@ -365,35 +409,42 @@ function TopologyCanvasInner({
   const handleNodesChange = useCallback(
     (changes: NodeChange<AssetFlowNode>[]) => {
       setFlowNodes((currentNodes) =>
-        applyNodeChanges(changes, currentNodes).map((node) => ({
-          ...node,
-          position: snapAssetPosition(node.position),
-          data: {
-            ...node.data,
-            asset: assetWithLivePosition(node.data.asset, snapAssetPosition(node.position))
-          }
-        }))
+        applyNodeChanges(changes, currentNodes).map((node) => {
+          const snapped = isPurdue ? snapAssetPosition(node.position) : snapToGrid(node.position);
+          return {
+            ...node,
+            position: snapped,
+            data: {
+              ...node.data,
+              asset: assetWithLivePosition(node.data.asset, snapped, layoutMode)
+            }
+          };
+        })
       );
     },
-    [setFlowNodes]
+    [isPurdue, layoutMode, setFlowNodes]
   );
 
   const commitNodePosition = useCallback<OnNodeDrag<AssetFlowNode>>(
     (_, node) => {
       setIsDragging(false);
-      const snapped = snapAssetPosition(node.position);
-      const zone = inferZoneFromY(snapped.y + ASSET_NODE_HEIGHT / 2);
-      onProjectChange((current) => {
-        const x = resolveAssetX(snapped.x, zone, node.id, current.assets);
-        return {
+      if (isPurdue) {
+        // Dragging between lanes reassigns the zone; the free position is preserved so the
+        // network layout survives a round-trip through the Purdue view.
+        const zone = inferZoneFromY(snapAssetPosition(node.position).y + ASSET_NODE_HEIGHT / 2);
+        onProjectChange((current) => ({
           ...current,
-          assets: current.assets.map((asset) =>
-            asset.id === node.id ? { ...asset, position: { x, y: snapped.y }, zone } : asset
-          )
-        };
-      });
+          assets: current.assets.map((asset) => (asset.id === node.id ? { ...asset, zone } : asset))
+        }));
+        return;
+      }
+      const position = snapToGrid(node.position);
+      onProjectChange((current) => ({
+        ...current,
+        assets: current.assets.map((asset) => (asset.id === node.id ? { ...asset, position } : asset))
+      }));
     },
-    [onProjectChange]
+    [isPurdue, onProjectChange]
   );
 
   const fitPurdueView = useCallback(() => {
@@ -431,7 +482,7 @@ function TopologyCanvasInner({
   return (
     <section
       className="canvas-shell"
-      aria-label="Purdue zones topology canvas"
+      aria-label="Topology canvas"
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
@@ -440,16 +491,34 @@ function TopologyCanvasInner({
     >
       <div className="canvas-titlebar">
         <div>
-          <h2>Purdue Zones</h2>
+          <h2>{isPurdue ? "Purdue Zones" : "Network Layout"}</h2>
           <p>
             {connectMode
               ? connectSourceId
                 ? "Select the destination asset for the new conduit."
                 : "Select the source asset for the new conduit."
-              : "Drag assets, connect conduits, then inspect reachability and rating."}
+              : isPurdue
+                ? "Assets projected into Purdue levels — drag between lanes to set a zone."
+                : "Lay the network out freely and group assets into subnets."}
           </p>
         </div>
         <div className="canvas-actions" aria-label="Canvas controls">
+          <div className="segmented-control" aria-label="Canvas layout mode">
+            {[
+              ["network", "Network"],
+              ["purdue", "Purdue"]
+            ].map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                className={layoutMode === mode ? "active" : ""}
+                onClick={() => onLayoutModeChange(mode as LayoutMode)}
+                title={mode === "purdue" ? "Project assets into Purdue levels" : "Free network layout grouped by subnet"}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="segmented-control" aria-label="Canvas view mode">
             {[
               ["clean", "Clean"],
@@ -468,11 +537,16 @@ function TopologyCanvasInner({
               </button>
             ))}
           </div>
+          {!isPurdue ? (
+            <button type="button" className="text-button compact" title="Create and edit subnets" onClick={onManageSubnets}>
+              Subnets
+            </button>
+          ) : null}
           <button type="button" className={`text-button ${connectMode ? "primary" : ""}`} onClick={onToggleConnectMode}>
             {connectMode ? "Cancel connect" : "Connect"}
           </button>
-          <button type="button" className="text-button compact" title="Fit Purdue zones" onClick={fitPurdueView}>
-            Fit Purdue
+          <button type="button" className="text-button compact" title="Fit topology in view" onClick={fitPurdueView}>
+            Fit
           </button>
           <button type="button" className="text-button compact" title="Undo last change" onClick={onUndo} disabled={!canUndo}>
             Undo
@@ -523,7 +597,7 @@ function TopologyCanvasInner({
           <div className="canvas-empty">
             <strong>Empty topology</strong>
             <p>
-              Drag an asset from the palette onto a Purdue zone to begin. Press <kbd>Ctrl / ⌘ K</kbd> for commands, or load
+              Drag an asset from the palette onto the canvas to begin. Press <kbd>Ctrl / ⌘ K</kbd> for commands, or load
               the Sample project from the header.
             </p>
           </div>
@@ -548,35 +622,55 @@ function TopologyCanvasInner({
           maxZoom={1.5}
           deleteKeyCode={null}
           connectionRadius={38}
-          snapGrid={[CANVAS_GRID_X, ZONE_ROW_HEIGHT]}
+          snapGrid={isPurdue ? [CANVAS_GRID_X, ZONE_ROW_HEIGHT] : [CANVAS_GRID_X, CANVAS_GRID_X]}
           autoPanOnNodeDrag={false}
           proOptions={{ hideAttribution: true }}
         >
           <ViewportPortal>
-            <div
-              className="zone-band-layer"
-              aria-hidden="true"
-              style={{ "--zone-band-width": `${contentExtent.bandWidth}px` } as CSSProperties}
-            >
-              {zones.map((zone, index) => (
-                <div
-                  className="zone-band-node"
-                  key={zone.id}
-                  style={
-                    {
-                      "--zone-band-y": `${index * ZONE_ROW_HEIGHT + ZONE_BAND_Y_OFFSET}px`,
-                      "--zone-band-height": `${ZONE_BAND_HEIGHT}px`,
-                      "--zone-band-color": zone.color
-                    } as CSSProperties
-                  }
-                >
-                  <strong>
-                    {zone.levelLabel} - {zone.shortName}
-                  </strong>
-                  <span>{zone.name}</span>
-                </div>
-              ))}
-            </div>
+            {isPurdue ? (
+              <div
+                className="zone-band-layer"
+                aria-hidden="true"
+                style={{ "--zone-band-width": `${contentExtent.bandWidth}px` } as CSSProperties}
+              >
+                {zones.map((zone, index) => (
+                  <div
+                    className="zone-band-node"
+                    key={zone.id}
+                    style={
+                      {
+                        "--zone-band-y": `${index * ZONE_ROW_HEIGHT + ZONE_BAND_Y_OFFSET}px`,
+                        "--zone-band-height": `${ZONE_BAND_HEIGHT}px`,
+                        "--zone-band-color": zone.color
+                      } as CSSProperties
+                    }
+                  >
+                    <strong>
+                      {zone.levelLabel} - {zone.shortName}
+                    </strong>
+                    <span>{zone.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!isPurdue && subnetBoxes.length > 0 ? (
+              <div className="subnet-layer" aria-hidden="true">
+                {subnetBoxes.map((box) => (
+                  <div
+                    className="subnet-box"
+                    key={box.id}
+                    style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
+                  >
+                    <span className="subnet-box-label">
+                      <strong>{box.name}</strong>
+                      {box.cidr || box.vlan ? (
+                        <small>{[box.cidr, box.vlan ? `VLAN ${box.vlan}` : ""].filter(Boolean).join(" · ")}</small>
+                      ) : null}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <svg
               className="conduit-overlay"
               aria-hidden="true"

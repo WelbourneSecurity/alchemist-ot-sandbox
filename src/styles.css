@@ -1296,6 +1296,114 @@ kbd {
   text-transform: uppercase;
 }
 
+/* Subnet containers — labelled grouping boxes behind the nodes in the network layout. */
+.subnet-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.subnet-box {
+  position: absolute;
+  border: 1px dashed var(--line-strong);
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.subnet-box-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  max-width: 100%;
+  padding: 0.22rem 0.55rem;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.subnet-box-label strong {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.subnet-box-label small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.subnet-manager {
+  width: min(42rem, 100%);
+  max-height: min(80vh, 42rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.subnet-manager-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.subnet-manager-head strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.subnet-manager-head p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.subnet-manager-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.subnet-manager-empty {
+  font-size: 0.82rem;
+}
+
+.subnet-manager-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr auto auto;
+  gap: 0.5rem;
+  align-items: end;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+}
+
+.subnet-manager-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2.1rem;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.subnet-manager-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .asset-node {
   position: relative;
   width: 11.6rem;

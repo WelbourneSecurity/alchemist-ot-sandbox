@@ -104,8 +104,19 @@ export const sampleProject: OtProject = {
     { id: "logical", label: "Topology is a logical model based on declared conduits, not live packet capture." },
     { id: "local", label: "Project data remains in the browser unless exported by the user." }
   ],
+  subnets: [
+    { id: "sn-it", name: "Corporate IT", cidr: "10.10.0.0/16", vlan: "IT" },
+    { id: "sn-bus", name: "Business Planning", cidr: "10.20.12.0/24", vlan: "BUS-210" },
+    { id: "sn-idmz", name: "IT/OT DMZ", cidr: "10.35.0.0/24", vlan: "IDMZ" },
+    { id: "sn-ot300", name: "OT Operations", cidr: "10.30.22.0/24", vlan: "OT-300" },
+    { id: "sn-ctrl", name: "Control LAN", cidr: "10.22.10.0/24", vlan: "CTRL-220" },
+    { id: "sn-plc", name: "PLC Cell", cidr: "10.11.30.0/24", vlan: "PLC-110" },
+    { id: "sn-sis", name: "Safety SIS", cidr: "10.9.0.0/24", vlan: "SIS-090" },
+    { id: "sn-field", name: "Field I/O", cidr: "10.0.40.0/24", vlan: "FIELD-040" }
+  ],
   assets: [
     asset("corp-it", "Corporate IT", "enterprise-it", "level5", 96, laneY.level5, {
+      subnetId: "sn-it",
       ipAddress: "10.10.0.0/16",
       vlan: "IT",
       protocols: ["HTTPS", "RDP", "SMB"],
@@ -113,6 +124,7 @@ export const sampleProject: OtProject = {
       controls: controls.strong
     }),
     asset("erp", "ERP / Planning", "enterprise-it", "level4", 432, laneY.level4, {
+      subnetId: "sn-bus",
       ipAddress: "10.20.12.0/24",
       vlan: "BUS-210",
       protocols: ["HTTPS", "SQL"],
@@ -128,12 +140,14 @@ export const sampleProject: OtProject = {
       controls: { ...controls.moderate, mfa: false, remoteAccessApproved: true }
     }),
     asset("edge-fw", "IT / OT Firewall", "firewall", "level3", 144, laneY.level3, {
+      subnetId: "sn-idmz",
       ipAddress: "10.35.0.1",
       vlan: "IDMZ",
       criticality: "critical",
       controls: controls.strong
     }),
     asset("jump-host", "OT Jump Host", "jump-host", "level3", 432, laneY.level3, {
+      subnetId: "sn-idmz",
       ipAddress: "10.35.10.12",
       vlan: "IDMZ-350",
       protocols: ["RDP", "SSH"],
@@ -141,6 +155,7 @@ export const sampleProject: OtProject = {
       controls: controls.strong
     }),
     asset("hist-replica", "Historian Replica", "historian", "level3", 720, laneY.level3, {
+      subnetId: "sn-idmz",
       ipAddress: "10.35.20.15",
       vlan: "IDMZ-351",
       protocols: ["OPC UA", "HTTPS"],
@@ -148,6 +163,7 @@ export const sampleProject: OtProject = {
       controls: controls.strong
     }),
     asset("ops-historian", "Site Historian", "historian", "level3", 1008, laneY.level3, {
+      subnetId: "sn-ot300",
       ipAddress: "10.30.22.10",
       vlan: "OT-300",
       protocols: ["OPC UA", "SQL"],
@@ -155,6 +171,7 @@ export const sampleProject: OtProject = {
       controls: controls.moderate
     }),
     asset("eng-ws", "Engineering WS", "engineering-workstation", "level2", 240, laneY.level2, {
+      subnetId: "sn-ctrl",
       ipAddress: "10.22.10.55",
       vlan: "CTRL-220",
       protocols: ["RDP", "Vendor Tooling", "Modbus TCP"],
@@ -162,6 +179,7 @@ export const sampleProject: OtProject = {
       controls: { ...controls.moderate, allowListing: false, centralLogging: false }
     }),
     asset("hmi-line1", "Line 1 HMI", "hmi", "level2", 528, laneY.level2, {
+      subnetId: "sn-ctrl",
       ipAddress: "10.22.10.80",
       vlan: "CTRL-220",
       protocols: ["OPC UA", "HTTPS"],
@@ -169,6 +187,7 @@ export const sampleProject: OtProject = {
       controls: controls.moderate
     }),
     asset("scada", "Packaging SCADA", "scada", "level2", 816, laneY.level2, {
+      subnetId: "sn-ctrl",
       ipAddress: "10.22.10.30",
       vlan: "CTRL-220",
       protocols: ["OPC UA", "Modbus TCP"],
@@ -176,6 +195,7 @@ export const sampleProject: OtProject = {
       controls: controls.moderate
     }),
     asset("plc-pack", "Packaging PLC", "plc-rtu", "level1", 432, laneY.level1, {
+      subnetId: "sn-plc",
       ipAddress: "10.11.30.14",
       vlan: "PLC-110",
       protocols: ["Modbus TCP", "EtherNet/IP"],
@@ -183,6 +203,7 @@ export const sampleProject: OtProject = {
       controls: { ...controls.weak, defaultCredentialsDisabled: true }
     }),
     asset("wireless-gw", "Wireless Gateway", "wireless-gateway", "level1", 720, laneY.level1, {
+      subnetId: "sn-plc",
       ipAddress: "10.11.31.8",
       vlan: "WIFI-111",
       protocols: ["WirelessHART", "HTTPS"],
@@ -190,6 +211,7 @@ export const sampleProject: OtProject = {
       controls: controls.moderate
     }),
     asset("sis", "Safety Controller", "safety-system", "level1", 144, laneY.level1, {
+      subnetId: "sn-sis",
       ipAddress: "10.9.0.20",
       vlan: "SIS-090",
       protocols: ["Vendor Safety Protocol"],
@@ -197,6 +219,7 @@ export const sampleProject: OtProject = {
       controls: { ...controls.strong, safetyValidated: true }
     }),
     asset("field-io", "Field I/O", "field-device", "level0", 528, laneY.level0, {
+      subnetId: "sn-field",
       ipAddress: "10.0.40.0/24",
       vlan: "FIELD-040",
       protocols: ["HART", "Profinet"],
@@ -429,6 +452,7 @@ export const blankProject: OtProject = {
     { id: "logical", label: "Topology is a logical model based on declared conduits, not live packet capture." },
     { id: "local", label: "Project data remains in the browser unless exported by the user." }
   ],
+  subnets: [],
   assets: [],
   conduits: []
 };

@@ -56,6 +56,14 @@ export type ProtocolFamilyId =
 
 export type CanvasMode = "clean" | "protocol" | "risk" | "boundary" | "reachability";
 
+/**
+ * How the topology is laid out on the canvas. "network" is a free-form layout
+ * grouped by subnet (the default authoring view); "purdue" projects the same
+ * assets into Purdue-level lanes by their `zone`. The model is identical in both
+ * — Purdue is a view, not a separate layout.
+ */
+export type LayoutMode = "network" | "purdue";
+
 export type ScoreCategory =
   | "segmentation"
   | "remoteAccess"
@@ -105,11 +113,24 @@ export interface Point {
   y: number;
 }
 
+/**
+ * A logical network segment (L2/L3). Orthogonal to the Purdue `zone`: a subnet
+ * typically maps to one zone but the two are independent attributes. Assets are
+ * grouped into a labelled container per subnet in the network layout.
+ */
+export interface Subnet {
+  id: string;
+  name: string;
+  cidr: string;
+  vlan: string;
+}
+
 export interface Asset {
   id: string;
   name: string;
   type: AssetTypeId;
   zone: ZoneId;
+  subnetId?: string;
   ipAddress: string;
   vlan: string;
   protocols: string[];
@@ -167,6 +188,7 @@ export interface OtProject {
   updatedAt: string;
   assets: Asset[];
   conduits: Conduit[];
+  subnets?: Subnet[];
   assumptions: ProjectAssumption[];
   zoneTargets?: Partial<Record<ZoneId, number>>;
 }

@@ -105,16 +105,33 @@ export function InspectorPanel({
               ))}
             </select>
           </label>
-          <label className="field">
-            <span>Zone / level</span>
-            <select value={asset.zone} onChange={(event) => onAssetChange(asset.id, { zone: event.target.value as Asset["zone"] })}>
-              {zones.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.levelLabel} - {zone.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="field-row">
+            <label className="field">
+              <span>Zone / level</span>
+              <select value={asset.zone} onChange={(event) => onAssetChange(asset.id, { zone: event.target.value as Asset["zone"] })}>
+                {zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.levelLabel} - {zone.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Subnet</span>
+              <select
+                value={asset.subnetId ?? ""}
+                onChange={(event) => onAssetChange(asset.id, { subnetId: event.target.value || undefined })}
+              >
+                <option value="">Unassigned</option>
+                {(project.subnets ?? []).map((subnet) => (
+                  <option key={subnet.id} value={subnet.id}>
+                    {subnet.name}
+                    {subnet.cidr ? ` (${subnet.cidr})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="field-row">
             <TextField label="IP / CIDR" value={asset.ipAddress} onChange={(ipAddress) => onAssetChange(asset.id, { ipAddress })} />
             <TextField label="VLAN" value={asset.vlan} onChange={(vlan) => onAssetChange(asset.id, { vlan })} />

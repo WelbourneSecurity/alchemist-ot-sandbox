@@ -2,17 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { sampleProject, blankProject } from "./data/sampleProject";
 import { getAssetType } from "./data/catalog";
 import {
+  ASSET_NODE_HEIGHT,
+  ASSET_NODE_WIDTH,
   assetYForZone,
   inferZoneFromY,
-  resolveAssetX,
-  snapAssetPosition,
-  snapPointToZone
+  resolveFreePosition,
+  snapToGrid
 } from "./data/canvasLayout";
 import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
-import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, ZoneId } from "./models/types";
+import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, Subnet, ZoneId } from "./models/types";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
@@ -20,6 +21,7 @@ import { CollapsedRail } from "./components/CollapsedRail";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
+import { SubnetManager } from "./components/SubnetManager";
 import { PrintableReport } from "./components/PrintableReport";
 import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
 import { ToastViewport } from "./components/ToastViewport";
@@ -139,9 +141,10 @@ export function App() {
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [commandOpen, setCommandOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
-  const { layout, togglePalette, toggleDock, setDockHeight } = usePanelLayout();
+  const { layout, togglePalette, toggleDock, setDockHeight, setLayoutMode } = usePanelLayout();
 
   const assessment = useMemo(() => assessProject(project), [project]);
   const reachability = useMemo(
@@ -235,14 +238,19 @@ export function App() {
   const addAsset = useCallback(
     (typeId: AssetTypeId, position?: Point) => {
       const type = getAssetType(typeId);
-      const zone = position ? inferZoneFromY(position.y) : type.defaultZone;
-      const desiredX = position ? snapPointToZone(position, zone).x : 96;
-      const x = resolveAssetX(desiredX, zone, null, project.assets);
-      const asset = createAsset(typeId, { x, y: assetYForZone(zone) }, zone);
+      // In the Purdue view a drop's lane sets the zone; in the free network view the zone
+      // comes from the asset type. Either way the asset gets a free position the network
+      // layout owns (collision-nudged so it never lands on top of an existing node).
+      const zone = position && layout.layoutMode === "purdue" ? inferZoneFromY(position.y) : type.defaultZone;
+      const desired = position
+        ? { x: position.x - ASSET_NODE_WIDTH / 2, y: position.y - ASSET_NODE_HEIGHT / 2 }
+        : { x: 96, y: assetYForZone(zone) };
+      const point = resolveFreePosition(desired, null, project.assets);
+      const asset = createAsset(typeId, point, zone);
       commitProject((current) => ({ ...current, assets: [...current.assets, asset] }));
       setSelectedId(asset.id);
     },
-    [commitProject, project.assets]
+    [commitProject, layout.layoutMode, project.assets]
   );
 
   const addConduit = useCallback(
@@ -313,6 +321,43 @@ export function App() {
     },
     [commitProject]
   );
+
+  const addSubnet = useCallback(() => {
+    const subnet: Subnet = {
+      id: makeId("subnet"),
+      name: `Subnet ${(project.subnets?.length ?? 0) + 1}`,
+      cidr: "",
+      vlan: ""
+    };
+    commitProject((current) => ({ ...current, subnets: [...(current.subnets ?? []), subnet] }));
+    return subnet.id;
+  }, [commitProject, project.subnets]);
+
+  const updateSubnet = useCallback(
+    (subnetId: string, patch: Partial<Subnet>) => {
+      commitProject((current) => ({
+        ...current,
+        subnets: (current.subnets ?? []).map((subnet) => (subnet.id === subnetId ? { ...subnet, ...patch } : subnet))
+      }));
+    },
+    [commitProject]
+  );
+
+  const removeSubnet = useCallback(
+    (subnetId: string) => {
+      commitProject((current) => ({
+        ...current,
+        subnets: (current.subnets ?? []).filter((subnet) => subnet.id !== subnetId),
+        assets: current.assets.map((asset) => (asset.subnetId === subnetId ? { ...asset, subnetId: undefined } : asset))
+      }));
+    },
+    [commitProject]
+  );
+
+  const openSubnetManager = useCallback(() => {
+    setLayoutMode("network");
+    setSubnetManagerOpen(true);
+  }, [setLayoutMode]);
 
   const confirmSelection = useCallback(() => {
     setSelectedId(null);
@@ -404,14 +449,18 @@ export function App() {
       ...selectedAsset,
       id: makeId("asset"),
       name: `${selectedAsset.name} copy`,
-      position: snapAssetPosition({ x: selectedAsset.position.x + 96, y: selectedAsset.position.y }),
+      position: resolveFreePosition(
+        snapToGrid({ x: selectedAsset.position.x + 48, y: selectedAsset.position.y + 48 }),
+        null,
+        project.assets
+      ),
       protocols: [...selectedAsset.protocols],
       controls: { ...selectedAsset.controls }
     };
     commitProject((current) => ({ ...current, assets: [...current.assets, clone] }));
     setSelectedId(clone.id);
     pushToast("Asset duplicated", "info");
-  }, [selectedAsset, commitProject, pushToast]);
+  }, [selectedAsset, commitProject, project.assets, pushToast]);
 
   useKeyboardShortcuts({
     onCommandPalette: () => setCommandOpen(true),
@@ -432,6 +481,19 @@ export function App() {
       { id: "export-svg", label: "Export topology SVG", run: handleExportSvg },
       { id: "print", label: "Print / save PDF report", run: () => window.print() },
       { id: "connect", label: "Toggle connect mode", hint: "C", run: handleToggleConnectMode },
+      {
+        id: "layout-network",
+        label: "Layout: network (free)",
+        hint: layout.layoutMode === "network" ? "active" : undefined,
+        run: () => setLayoutMode("network")
+      },
+      {
+        id: "layout-purdue",
+        label: "Layout: Purdue levels",
+        hint: layout.layoutMode === "purdue" ? "active" : undefined,
+        run: () => setLayoutMode("purdue")
+      },
+      { id: "subnets", label: "Manage subnets…", run: openSubnetManager },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
       { id: "dock", label: layout.dockOpen ? "Collapse analysis dock" : "Expand analysis dock", run: toggleDock },
@@ -468,8 +530,11 @@ export function App() {
     handleToggleConnectMode,
     togglePalette,
     toggleDock,
+    setLayoutMode,
+    openSubnetManager,
     layout.paletteOpen,
     layout.dockOpen,
+    layout.layoutMode,
     assessment.findings,
     handleFindingSelect,
     history.length,
@@ -524,6 +589,7 @@ export function App() {
             selectedId={selectedId}
             highlightedConduitIds={highlightedConduitIds}
             canvasMode={canvasMode}
+            layoutMode={layout.layoutMode}
             connectMode={connectMode}
             connectSourceId={connectSourceId}
             canUndo={history.length > 0}
@@ -539,6 +605,8 @@ export function App() {
                 setActiveFindingId(null);
               }
             }}
+            onLayoutModeChange={setLayoutMode}
+            onManageSubnets={openSubnetManager}
             onToggleConnectMode={handleToggleConnectMode}
             onFindingSelect={handleFindingSelect}
             onRenameAsset={renameAsset}
@@ -597,6 +665,15 @@ export function App() {
       />
       <CommandPalette open={commandOpen} commands={commands} onClose={() => setCommandOpen(false)} />
       <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <SubnetManager
+        open={subnetManagerOpen}
+        subnets={project.subnets ?? []}
+        assets={project.assets}
+        onClose={() => setSubnetManagerOpen(false)}
+        onAdd={addSubnet}
+        onUpdate={updateSubnet}
+        onRemove={removeSubnet}
+      />
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
 
       <input
