@@ -1,4 +1,4 @@
-import { Download, FileText, ImageDown, Moon, Printer, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
+import { Download, FileText, ImageDown, Moon, Printer, Radar, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
 import { ScoreGauge } from "./ScoreGauge";
@@ -11,6 +11,7 @@ interface AppHeaderProps {
   canRedo: boolean;
   onProjectNameChange: (name: string) => void;
   onImport: (file: File) => void;
+  onImportScan: () => void;
   onExportJson: () => void;
   onExportSvg: () => void;
   onPrintReport: () => void;
@@ -42,6 +43,7 @@ export function AppHeader({
   canRedo,
   onProjectNameChange,
   onImport,
+  onImportScan,
   onExportJson,
   onExportSvg,
   onPrintReport,
@@ -106,6 +108,10 @@ export function AppHeader({
         <button type="button" className="text-button" onClick={() => inputRef.current?.click()}>
           <Upload size={16} />
           Import
+        </button>
+        <button type="button" className="text-button" onClick={onImportScan} title="Import an Nmap, Zeek, GraphML or CSV scan">
+          <Radar size={16} />
+          Scan
         </button>
         <button type="button" className="text-button" onClick={onExportJson}>
           <Download size={16} />

@@ -14,6 +14,8 @@ import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
 import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, Subnet, ZoneId } from "./models/types";
+import { createAsset, createConduit, makeId } from "./models/factory";
+import type { AssembledTopology } from "./import";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { AppHeader } from "./components/AppHeader";
 import { AssetPalette } from "./components/AssetPalette";
@@ -22,6 +24,7 @@ import { CommandPalette, type Command } from "./components/CommandPalette";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { SubnetManager } from "./components/SubnetManager";
+import { ImportWizard } from "./components/ImportWizard";
 import { PrintableReport } from "./components/PrintableReport";
 import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
 import { ToastViewport } from "./components/ToastViewport";
@@ -37,13 +40,6 @@ function cloneProject(project: OtProject): OtProject {
   return JSON.parse(JSON.stringify(project)) as OtProject;
 }
 
-function makeId(prefix: string) {
-  if ("crypto" in window && typeof window.crypto.randomUUID === "function") {
-    return `${prefix}-${window.crypto.randomUUID().slice(0, 8)}`;
-  }
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
 function loadStoredProject(): OtProject {
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (!stored) {
@@ -51,72 +47,6 @@ function loadStoredProject(): OtProject {
   }
   const parsed = parseProjectJson(stored);
   return parsed.ok ? parsed.project : cloneProject(sampleProject);
-}
-
-function createAsset(typeId: AssetTypeId, position: Point, zone?: ZoneId): Asset {
-  const type = getAssetType(typeId);
-  return {
-    id: makeId("asset"),
-    name: type.label,
-    type: type.id,
-    zone: zone ?? type.defaultZone,
-    ipAddress: "",
-    vlan: "",
-    protocols: [...type.baseProtocols],
-    criticality: type.id === "plc-rtu" || type.id === "safety-system" ? "critical" : "medium",
-    owner: "",
-    notes: "",
-    position,
-    controls: {
-      mfa: false,
-      allowListing: false,
-      endpointProtection: false,
-      patchingProgram: false,
-      backups: false,
-      defaultCredentialsDisabled: false,
-      networkMonitoring: false,
-      centralLogging: false,
-      remoteAccessApproved: false,
-      safetyValidated: type.id === "safety-system"
-    },
-    manufacturer: "",
-    model: "",
-    firmwareVersion: "",
-    lifecycleStatus: "unknown",
-    siteArea: "",
-    patchWindow: "",
-    backupStatus: "unknown",
-    criticalProcessTag: ""
-  };
-}
-
-function createConduit(source: string, target: string): Conduit {
-  return {
-    id: makeId("conduit"),
-    source,
-    target,
-    name: "New conduit",
-    protocol: "HTTPS",
-    port: "443",
-    protocolFamily: "auto",
-    direction: "source-to-target",
-    control: "firewalled",
-    firewallRule: "explicit",
-    trustBoundary: true,
-    inspected: false,
-    logged: false,
-    encrypted: true,
-    jumpHostRequired: false,
-    ruleOwner: "",
-    businessJustification: "",
-    reviewDate: "",
-    expiryDate: "",
-    monitoringSource: "",
-    inspectionPoint: "",
-    temporaryAccess: false,
-    businessCritical: false,
-    notes: ""
-  };
 }
 
 export function App() {
@@ -142,6 +72,7 @@ export function App() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
+  const [importWizardOpen, setImportWizardOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
   const { layout, togglePalette, toggleDock, setDockHeight, setLayoutMode } = usePanelLayout();
@@ -359,6 +290,38 @@ export function App() {
     setSubnetManagerOpen(true);
   }, [setLayoutMode]);
 
+  const applyImport = useCallback(
+    (result: AssembledTopology, mode: "replace" | "merge") => {
+      commitProject((current) => {
+        if (mode === "replace") {
+          return {
+            ...cloneProject(blankProject),
+            id: makeId("project"),
+            name: "Imported topology",
+            assets: result.assets,
+            conduits: result.conduits,
+            subnets: result.subnets,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        // Drop the imported block below existing content so the two don't overlap on the canvas.
+        const maxY = current.assets.reduce((max, asset) => Math.max(max, asset.position.y), 0);
+        const shift = current.assets.length > 0 ? maxY + 220 : 0;
+        const shifted = result.assets.map((asset) => ({ ...asset, position: { x: asset.position.x, y: asset.position.y + shift } }));
+        return {
+          ...current,
+          assets: [...current.assets, ...shifted],
+          conduits: [...current.conduits, ...result.conduits],
+          subnets: [...(current.subnets ?? []), ...result.subnets]
+        };
+      });
+      setLayoutMode("network");
+      setSelectedId(null);
+      pushToast(`Imported ${result.assets.length} assets and ${result.conduits.length} conduits`, "success");
+    },
+    [commitProject, pushToast, setLayoutMode]
+  );
+
   const confirmSelection = useCallback(() => {
     setSelectedId(null);
     setConnectSourceId(null);
@@ -477,6 +440,7 @@ export function App() {
       { id: "sample", label: "Load sample project", run: handleLoadSample },
       { id: "blank", label: "New blank project", run: handleNewBlank },
       { id: "import", label: "Import project…", hint: "JSON", run: () => importInputRef.current?.click() },
+      { id: "import-scan", label: "Import network scan…", hint: "Nmap/Zeek/CSV", run: () => setImportWizardOpen(true) },
       { id: "export-json", label: "Export project JSON", run: handleExportJson },
       { id: "export-svg", label: "Export topology SVG", run: handleExportSvg },
       { id: "print", label: "Print / save PDF report", run: () => window.print() },
@@ -559,6 +523,7 @@ export function App() {
           canRedo={future.length > 0}
           onProjectNameChange={(name) => commitProject((current) => ({ ...current, name }))}
           onImport={importProject}
+          onImportScan={() => setImportWizardOpen(true)}
           onExportJson={handleExportJson}
           onExportSvg={handleExportSvg}
           onPrintReport={() => window.print()}
@@ -674,6 +639,7 @@ export function App() {
         onUpdate={updateSubnet}
         onRemove={removeSubnet}
       />
+      <ImportWizard open={importWizardOpen} onClose={() => setImportWizardOpen(false)} onApply={applyImport} />
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
 
       <input

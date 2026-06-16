@@ -1411,6 +1411,118 @@ kbd {
   justify-content: flex-end;
 }
 
+.import-wizard {
+  width: min(34rem, 100%);
+  max-height: min(85vh, 44rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.import-wizard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.import-wizard-head strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.import-wizard-head p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.import-wizard-hint {
+  margin: -0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.import-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.2rem 1rem;
+  border: 1px dashed var(--line-strong);
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  text-align: center;
+}
+
+.import-dropzone span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.import-wizard-error {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+  font-size: 0.8rem;
+}
+
+.import-preview {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+}
+
+.import-preview-counts {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.import-preview-counts span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.import-preview-counts strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-right: 0.3rem;
+}
+
+.import-preview-warnings {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.2rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.import-mode {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.import-wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .asset-node {
   position: relative;
   width: 11.6rem;
