@@ -1,6 +1,5 @@
-import { PROJECT_SCHEMA_VERSION, type Asset, type Conduit, type OtProject, type ZoneId } from "../models/types";
+import { PROJECT_SCHEMA_VERSION, type Asset, type Conduit, type OtProject, type Subnet, type ZoneId } from "../models/types";
 import { blankProject } from "../data/sampleProject";
-import { snapPointToZone } from "../data/canvasLayout";
 
 export type ValidationResult =
   | { ok: true; project: OtProject; errors: [] }
@@ -102,6 +101,7 @@ export function validateProject(input: unknown): ValidationResult {
       schemaVersion: PROJECT_SCHEMA_VERSION,
       assets: (input.assets as Asset[]).map(completeAsset),
       conduits: (input.conduits as Conduit[]).map(completeConduit),
+      subnets: Array.isArray(input.subnets) ? (input.subnets as Subnet[]).map(completeSubnet) : [],
       assumptions: Array.isArray(input.assumptions) ? (input.assumptions as OtProject["assumptions"]) : blankProject.assumptions,
       updatedAt: new Date().toISOString()
     },
@@ -125,12 +125,24 @@ export function serializeProject(project: OtProject): string {
   return JSON.stringify({ ...project, schemaVersion: PROJECT_SCHEMA_VERSION, updatedAt: new Date().toISOString() }, null, 2);
 }
 
+function completeSubnet(subnet: Subnet): Subnet {
+  return {
+    id: String(subnet.id),
+    name: subnet.name ?? "Subnet",
+    cidr: subnet.cidr ?? "",
+    vlan: subnet.vlan ?? ""
+  };
+}
+
 function completeAsset(asset: Asset): Asset {
   const zone = normalizeZone(asset.zone, asset.type);
   return {
     ...asset,
     zone,
-    position: snapPointToZone(asset.position, zone),
+    // Free position is preserved verbatim — the Purdue lanes are a view (projectPurduePositions),
+    // not the stored layout, so we no longer snap positions onto zone rows here.
+    position: { x: Number(asset.position?.x) || 0, y: Number(asset.position?.y) || 0 },
+    subnetId: typeof asset.subnetId === "string" ? asset.subnetId : undefined,
     protocols: Array.isArray(asset.protocols) ? asset.protocols : [],
     manufacturer: asset.manufacturer ?? "",
     model: asset.model ?? "",

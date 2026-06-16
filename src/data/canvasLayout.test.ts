@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { Point, ZoneId } from "../models/types";
-import { ASSET_NODE_WIDTH, resolveAssetX, snapX } from "./canvasLayout";
+import type { Point, Subnet, ZoneId } from "../models/types";
+import {
+  ASSET_NODE_HEIGHT,
+  ASSET_NODE_WIDTH,
+  CANVAS_GRID_X,
+  SUBNET_BOX_PAD,
+  SUBNET_LABEL_HEIGHT,
+  assetYForZone,
+  projectPurduePositions,
+  resolveAssetX,
+  resolveFreePosition,
+  snapToGrid,
+  snapX,
+  subnetBoundingBoxes
+} from "./canvasLayout";
 
 type LayoutAsset = { id: string; zone: ZoneId; position: Point };
 
@@ -23,5 +36,82 @@ describe("resolveAssetX", () => {
   it("ignores the asset being moved", () => {
     const assets: LayoutAsset[] = [{ id: "a", zone: "level1", position: { x: 300, y: 0 } }];
     expect(resolveAssetX(300, "level1", "a", assets)).toBe(snapX(300));
+  });
+});
+
+describe("snapToGrid", () => {
+  it("snaps both axes to the canvas grid without forcing a zone lane", () => {
+    const snapped = snapToGrid({ x: 301, y: 205 });
+    expect(snapped.x % CANVAS_GRID_X).toBe(0);
+    expect(snapped.y % CANVAS_GRID_X).toBe(0);
+    expect(snapped.y).toBe(Math.round(205 / CANVAS_GRID_X) * CANVAS_GRID_X);
+  });
+});
+
+describe("projectPurduePositions", () => {
+  it("projects each asset onto its zone lane (y) regardless of free position", () => {
+    const assets: LayoutAsset[] = [
+      { id: "a", zone: "level1", position: { x: 900, y: 12 } },
+      { id: "b", zone: "level0", position: { x: 40, y: 999 } }
+    ];
+    const projected = projectPurduePositions(assets);
+    expect(projected.get("a")?.y).toBe(assetYForZone("level1"));
+    expect(projected.get("b")?.y).toBe(assetYForZone("level0"));
+  });
+
+  it("packs assets in the same lane left-to-right, ordered by free x, without overlap", () => {
+    const assets: LayoutAsset[] = [
+      { id: "right", zone: "level2", position: { x: 800, y: 0 } },
+      { id: "left", zone: "level2", position: { x: 100, y: 0 } }
+    ];
+    const projected = projectPurduePositions(assets);
+    const left = projected.get("left")!;
+    const right = projected.get("right")!;
+    expect(left.y).toBe(right.y);
+    expect(left.x).toBeLessThan(right.x);
+    expect(right.x - left.x).toBeGreaterThanOrEqual(ASSET_NODE_WIDTH);
+  });
+});
+
+describe("resolveFreePosition", () => {
+  it("keeps a grid-snapped point when nothing is nearby", () => {
+    expect(resolveFreePosition({ x: 300, y: 240 }, null, [])).toEqual(snapToGrid({ x: 300, y: 240 }));
+  });
+
+  it("nudges a new asset off one that already sits at the spot", () => {
+    const existing = [{ id: "a", position: snapToGrid({ x: 300, y: 240 }) }];
+    const resolved = resolveFreePosition({ x: 300, y: 240 }, null, existing);
+    const clear =
+      Math.abs(resolved.x - existing[0].position.x) >= ASSET_NODE_WIDTH ||
+      Math.abs(resolved.y - existing[0].position.y) >= ASSET_NODE_HEIGHT;
+    expect(clear).toBe(true);
+  });
+
+  it("ignores the asset being moved", () => {
+    const existing = [{ id: "a", position: snapToGrid({ x: 300, y: 240 }) }];
+    expect(resolveFreePosition({ x: 300, y: 240 }, "a", existing)).toEqual(snapToGrid({ x: 300, y: 240 }));
+  });
+});
+
+describe("subnetBoundingBoxes", () => {
+  const subnets: Subnet[] = [
+    { id: "sn-a", name: "Control", cidr: "10.0.0.0/24", vlan: "10" },
+    { id: "sn-empty", name: "Spare", cidr: "", vlan: "" }
+  ];
+
+  it("wraps a subnet's members with padding and a label strip, skipping empty subnets", () => {
+    const assets = [
+      { subnetId: "sn-a", position: { x: 100, y: 100 } },
+      { subnetId: "sn-a", position: { x: 400, y: 200 } },
+      { subnetId: undefined, position: { x: 999, y: 999 } }
+    ];
+    const boxes = subnetBoundingBoxes(assets, subnets);
+    expect(boxes).toHaveLength(1);
+    const box = boxes[0];
+    expect(box.id).toBe("sn-a");
+    expect(box.x).toBe(100 - SUBNET_BOX_PAD);
+    expect(box.y).toBe(100 - SUBNET_BOX_PAD - SUBNET_LABEL_HEIGHT);
+    expect(box.width).toBe(400 + ASSET_NODE_WIDTH - 100 + SUBNET_BOX_PAD * 2);
+    expect(box.height).toBe(200 + ASSET_NODE_HEIGHT - 100 + SUBNET_BOX_PAD * 2 + SUBNET_LABEL_HEIGHT);
   });
 });
