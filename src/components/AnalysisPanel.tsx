@@ -4,6 +4,7 @@ import {
   ChevronUp,
   FileText,
   Grid2X2,
+  Layers,
   ListFilter,
   Printer,
   Route,
@@ -13,7 +14,8 @@ import {
 import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
-import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity } from "../models/types";
+import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity, ZoneId } from "../models/types";
+import { assessSecurityLevels, foundationalRequirements } from "../engine/securityLevels";
 import { VerdictBanner } from "./VerdictBanner";
 
 interface AnalysisPanelProps {
@@ -33,6 +35,7 @@ interface AnalysisPanelProps {
   onDockResize: (height: number) => void;
   dockOpen: boolean;
   onToggleDock: () => void;
+  onZoneTargetChange: (zone: ZoneId, target: number) => void;
 }
 
 const DOCK_MIN = 7;
@@ -41,13 +44,14 @@ const DOCK_MAX = 42;
 const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "reachability", label: "Reachability", Icon: Route },
   { id: "rating", label: "Security Rating", Icon: ShieldCheck },
+  { id: "levels", label: "Security Levels", Icon: Layers },
   { id: "findings", label: "Findings", Icon: AlertTriangle },
   { id: "flows", label: "Flow Table", Icon: ListFilter },
   { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 },
   { id: "report", label: "Report", Icon: FileText }
 ];
 
-type TabId = "reachability" | "rating" | "findings" | "flows" | "matrix" | "report";
+type TabId = "reachability" | "rating" | "levels" | "findings" | "flows" | "matrix" | "report";
 
 function directionLabel(direction: string) {
   if (direction === "source-to-target") {
@@ -75,7 +79,8 @@ export function AnalysisPanel({
   dockHeight,
   onDockResize,
   dockOpen,
-  onToggleDock
+  onToggleDock,
+  onZoneTargetChange
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
   const [includeDocs, setIncludeDocs] = useState(false);
@@ -89,6 +94,7 @@ export function AnalysisPanel({
     (finding) => (includeDocs || finding.category !== "documentation") && severityOn[finding.severity]
   );
   const hiddenFindingCount = assessment.findings.length - visibleFindings.length;
+  const securityLevels = assessSecurityLevels(project, project.zoneTargets);
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -279,6 +285,66 @@ export function AnalysisPanel({
               </div>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {activeTab === "levels" ? (
+        <div className="analysis-content sl-view">
+          <table className="sl-table">
+            <thead>
+              <tr>
+                <th>Zone</th>
+                <th>SL-T</th>
+                <th>SL-A</th>
+                <th>Gap</th>
+                {foundationalRequirements.map((fr) => (
+                  <th key={fr.id} title={fr.label}>
+                    {fr.id}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {securityLevels.zones.map((zoneSL) => {
+                const zoneDef = getZone(zoneSL.zone);
+                const gap = zoneSL.target - zoneSL.achieved;
+                return (
+                  <tr key={zoneSL.zone} className={gap > 0 ? "sl-below" : ""}>
+                    <th title={zoneDef.name}>{zoneDef.shortName}</th>
+                    <td>
+                      <select
+                        className="sl-target-select"
+                        value={zoneSL.target}
+                        aria-label={`Target Security Level for ${zoneDef.name}`}
+                        onChange={(event) => onZoneTargetChange(zoneSL.zone, Number(event.target.value))}
+                      >
+                        {[1, 2, 3].map((level) => (
+                          <option key={level} value={level}>
+                            SL {level}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className={gap > 0 ? "sl-a sl-a-below" : "sl-a"}>SL {zoneSL.achieved}</td>
+                    <td className="sl-gap">{gap > 0 ? `-${gap}` : "met"}</td>
+                    {foundationalRequirements.map((fr) => (
+                      <td
+                        key={fr.id}
+                        className={`fr-cell${zoneSL.limiting.includes(fr.id) && gap > 0 ? " fr-limiting" : ""}`}
+                        title={`${fr.label}: SL ${zoneSL.frLevels[fr.id]}`}
+                      >
+                        {zoneSL.frLevels[fr.id]}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="muted">
+            SL-A (achieved) is capped by the weakest Foundational Requirement (FR1–FR7); the limiting requirement(s) are
+            marked. Set the target per zone — any zone below target appears as a finding. Hover a column for its name.
+          </p>
         </div>
       ) : null}
 

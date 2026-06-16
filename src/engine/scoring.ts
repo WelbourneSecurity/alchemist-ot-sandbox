@@ -1,5 +1,6 @@
 import { categoryLabels, getAssetType, getZone, standardReferences } from "../data/catalog";
 import { findReachability } from "./reachability";
+import { assessSecurityLevels, foundationalRequirements } from "./securityLevels";
 import type { Asset, Conduit, Finding, OtProject, ScoreCategory, SecurityAssessment, Severity } from "../models/types";
 
 const categoryWeights: Record<ScoreCategory, number> = {
@@ -415,6 +416,32 @@ export function assessProject(project: OtProject): SecurityAssessment {
         asset.id
       );
     }
+  }
+
+  const securityLevels = assessSecurityLevels(project, project.zoneTargets);
+  for (const zoneSL of securityLevels.zones) {
+    if (zoneSL.achieved >= zoneSL.target) {
+      continue;
+    }
+    const zoneDef = getZone(zoneSL.zone);
+    const limiting = zoneSL.limiting
+      .map((fr) => foundationalRequirements.find((item) => item.id === fr)?.label ?? fr)
+      .join(", ");
+    addFinding(
+      findings,
+      {
+        category: "segmentation",
+        severity: zoneSL.target - zoneSL.achieved >= 2 ? "high" : "medium",
+        title: `Zone below target Security Level (SL-A ${zoneSL.achieved} vs SL-T ${zoneSL.target})`,
+        detail: `${zoneDef.levelLabel} ${zoneDef.name} achieves SL ${zoneSL.achieved} against a target of SL ${zoneSL.target}. Limiting requirement(s): ${limiting}.`,
+        remediation:
+          "Close the weakest Foundational Requirement(s) for this zone — strengthen the controls and conduit posture (authentication, use control, integrity, data flow, monitoring, or availability) that hold the achieved level down.",
+        affectedAssetIds: project.assets.filter((asset) => asset.zone === zoneSL.zone).map((asset) => asset.id),
+        affectedConduitIds: [],
+        references: [standardReferences.isa62443]
+      },
+      `sl-${zoneSL.zone}`
+    );
   }
 
   const categoryScores = Object.keys(categoryWeights).map((categoryKey) => {

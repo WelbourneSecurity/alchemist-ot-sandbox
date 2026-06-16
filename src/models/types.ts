@@ -168,6 +168,7 @@ export interface OtProject {
   assets: Asset[];
   conduits: Conduit[];
   assumptions: ProjectAssumption[];
+  zoneTargets?: Partial<Record<ZoneId, number>>;
 }
 
 export interface PathRisk {

@@ -307,6 +307,13 @@ export function App() {
 
   const renameAsset = useCallback((id: string, name: string) => updateAsset(id, { name }), [updateAsset]);
 
+  const setZoneTarget = useCallback(
+    (zone: ZoneId, target: number) => {
+      commitProject((current) => ({ ...current, zoneTargets: { ...current.zoneTargets, [zone]: target } }));
+    },
+    [commitProject]
+  );
+
   const confirmSelection = useCallback(() => {
     setSelectedId(null);
     setConnectSourceId(null);
@@ -568,6 +575,7 @@ export function App() {
             onDockResize={setDockHeight}
             dockOpen={layout.dockOpen}
             onToggleDock={toggleDock}
+            onZoneTargetChange={setZoneTarget}
           />
         </section>
       </main>
