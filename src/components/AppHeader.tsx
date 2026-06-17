@@ -1,4 +1,4 @@
-import { Download, FileText, ImageDown, Moon, Printer, Radar, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
+import { Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
 import { ScoreGauge } from "./ScoreGauge";
@@ -15,7 +15,7 @@ interface AppHeaderProps {
   onExportJson: () => void;
   onExportSvg: () => void;
   onPrintReport: () => void;
-  onLoadSample: () => void;
+  onBrowseScenarios: () => void;
   onNewBlank: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -47,7 +47,7 @@ export function AppHeader({
   onExportJson,
   onExportSvg,
   onPrintReport,
-  onLoadSample,
+  onBrowseScenarios,
   onNewBlank,
   onUndo,
   onRedo,
@@ -101,9 +101,9 @@ export function AppHeader({
           <RotateCcw size={16} />
           Blank
         </button>
-        <button type="button" className="text-button" onClick={onLoadSample}>
-          <FileText size={16} />
-          Sample
+        <button type="button" className="text-button" onClick={onBrowseScenarios} title="Browse sector scenarios">
+          <LayoutGrid size={16} />
+          Scenarios
         </button>
         <button type="button" className="text-button" onClick={() => inputRef.current?.click()}>
           <Upload size={16} />
