@@ -17,7 +17,19 @@ import {
   type OnNodeDrag,
   useReactFlow
 } from "@xyflow/react";
-import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertTriangle,
+  Cable,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Layers,
+  Network,
+  Route,
+  ShieldAlert,
+  Split,
+  type LucideIcon
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ASSET_NODE_HEIGHT,
@@ -42,6 +54,7 @@ import type {
   Asset,
   AssetTypeId,
   CanvasMode,
+  ConduitDirection,
   Finding,
   LayoutMode,
   OtProject,
@@ -50,7 +63,9 @@ import type {
   ZoneId
 } from "../models/types";
 import { buildVerdict } from "../lib/verdict";
+import { assetBadges } from "../lib/assetBadges";
 import { AssetGlyph } from "./AssetGlyph";
+import { CanvasLegend, type LegendFamily } from "./CanvasLegend";
 import { ScoreGauge } from "./ScoreGauge";
 
 interface TopologyCanvasProps {
@@ -96,6 +111,7 @@ type AssetFlowNode = Node<AssetNodeData, "asset">;
 function AssetNode({ data }: NodeProps<AssetFlowNode>) {
   const type = getAssetType(data.asset.type);
   const zone = getZone(data.asset.zone);
+  const badges = assetBadges(data.asset);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.asset.name);
 
@@ -117,42 +133,58 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
       <Handle id="in" type="target" position={Position.Left} className="flow-handle" />
       <Handle id="out" type="source" position={Position.Right} className="flow-handle" />
       <div className="asset-node-icon">
-        <AssetGlyph icon={type.icon} size={17} />
+        <AssetGlyph icon={type.icon} size={19} />
       </div>
       <div className="asset-node-body">
-        {editing ? (
-          <input
-            className="nodrag asset-node-rename"
-            value={draft}
-            autoFocus
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={commitRename}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                commitRename();
-              } else if (event.key === "Escape") {
-                event.preventDefault();
+        <div className="asset-node-titlerow">
+          {editing ? (
+            <input
+              className="nodrag asset-node-rename"
+              value={draft}
+              autoFocus
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={commitRename}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitRename();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  setDraft(data.asset.name);
+                  setEditing(false);
+                }
+              }}
+            />
+          ) : (
+            <strong
+              title="Double-click to rename"
+              onDoubleClick={(event) => {
+                event.stopPropagation();
                 setDraft(data.asset.name);
-                setEditing(false);
-              }
-            }}
-          />
-        ) : (
-          <strong
-            title="Double-click to rename"
-            onDoubleClick={(event) => {
-              event.stopPropagation();
-              setDraft(data.asset.name);
-              setEditing(true);
-            }}
-          >
-            {data.asset.name}
-          </strong>
-        )}
-        <span>{type.label}</span>
-        <small>{data.asset.ipAddress || data.asset.vlan || "metadata incomplete"}</small>
+                setEditing(true);
+              }}
+            >
+              {data.asset.name}
+            </strong>
+          )}
+          <span className="asset-node-zone" title={`${zone.levelLabel} — ${zone.name}`}>
+            {zone.shortName}
+          </span>
+        </div>
+        <span className="asset-node-type">{type.label}</span>
+        <div className="asset-node-foot">
+          <small>{data.asset.ipAddress || data.asset.vlan || "no address"}</small>
+          {badges.length > 0 ? (
+            <span className="asset-node-badges">
+              {badges.map((badge) => (
+                <span key={badge.key} className={`asset-badge tone-${badge.tone}`} title={badge.title}>
+                  {badge.label}
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -161,6 +193,19 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
 const nodeTypes = {
   asset: AssetNode
 };
+
+const layoutModeOptions: Array<{ mode: LayoutMode; label: string; Icon: LucideIcon; title: string }> = [
+  { mode: "network", label: "Network", Icon: Network, title: "Free network layout grouped by subnet" },
+  { mode: "purdue", label: "Purdue", Icon: Layers, title: "Project assets into Purdue levels" }
+];
+
+const viewModeOptions: Array<{ mode: CanvasMode; label: string; Icon: LucideIcon; title: string }> = [
+  { mode: "clean", label: "Clean", Icon: Eye, title: "Neutral topology view" },
+  { mode: "protocol", label: "Protocol", Icon: Cable, title: "Colour conduits by protocol family" },
+  { mode: "risk", label: "Risk", Icon: ShieldAlert, title: "Colour conduits by finding severity" },
+  { mode: "boundary", label: "Boundary", Icon: Split, title: "Emphasise trust-boundary crossings" },
+  { mode: "reachability", label: "Path", Icon: Route, title: "Focus the analysed attacker path" }
+];
 
 interface ConduitOverlayItem {
   id: string;
@@ -173,6 +218,7 @@ interface ConduitOverlayItem {
   color: string;
   opacity: number;
   trustBoundary: boolean;
+  direction: ConduitDirection;
   selected: boolean;
   highlighted: boolean;
   labelVisible: boolean;
@@ -351,6 +397,18 @@ function TopologyCanvasInner({
     [isPurdue, liveAssets, project.subnets]
   );
 
+  // Distinct protocol families actually present, so the legend only lists what's on the canvas.
+  const legendFamilies = useMemo<LegendFamily[]>(() => {
+    const seen = new Map<string, LegendFamily>();
+    for (const conduit of project.conduits) {
+      const family = resolveProtocolFamily(conduit);
+      if (!seen.has(family.id)) {
+        seen.set(family.id, { id: family.id, label: family.label, color: family.color });
+      }
+    }
+    return [...seen.values()];
+  }, [project.conduits]);
+
   const conduitOverlayItems = useMemo<ConduitOverlayItem[]>(() => {
     const assets = new Map(liveAssets.map((asset) => [asset.id, asset]));
     const offsets = conduitParallelOffsets(project.conduits);
@@ -396,6 +454,7 @@ function TopologyCanvasInner({
           color,
           opacity: conduitOpacity(conduit, canvasMode, highlighted),
           trustBoundary: conduit.trustBoundary,
+          direction: conduit.direction,
           selected,
           highlighted: highlighted || (canvasMode === "risk" && Boolean(severity)),
           labelVisible: showLabel,
@@ -515,38 +574,53 @@ function TopologyCanvasInner({
                 ? "Assets projected into Purdue levels — drag between lanes to set a zone."
                 : "Lay the network out freely and group assets into subnets."}
           </p>
+          <div className="canvas-stats" aria-label="Topology summary">
+            <span>
+              <strong>{project.assets.length}</strong> assets
+            </span>
+            <span>
+              <strong>{project.conduits.length}</strong> conduits
+            </span>
+            <span>
+              <strong>{(project.subnets ?? []).length}</strong> subnets
+            </span>
+            {verdict.criticalCount > 0 ? (
+              <span className="canvas-stat-danger">
+                <strong>{verdict.criticalCount}</strong> critical
+              </span>
+            ) : null}
+            {verdict.highCount > 0 ? (
+              <span>
+                <strong>{verdict.highCount}</strong> high
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="canvas-actions" aria-label="Canvas controls">
           <div className="segmented-control" aria-label="Canvas layout mode">
-            {[
-              ["network", "Network"],
-              ["purdue", "Purdue"]
-            ].map(([mode, label]) => (
+            {layoutModeOptions.map(({ mode, label, Icon, title }) => (
               <button
                 key={mode}
                 type="button"
                 className={layoutMode === mode ? "active" : ""}
-                onClick={() => onLayoutModeChange(mode as LayoutMode)}
-                title={mode === "purdue" ? "Project assets into Purdue levels" : "Free network layout grouped by subnet"}
+                onClick={() => onLayoutModeChange(mode)}
+                title={title}
               >
+                <Icon size={13} aria-hidden="true" />
                 {label}
               </button>
             ))}
           </div>
           <div className="segmented-control" aria-label="Canvas view mode">
-            {[
-              ["clean", "Clean"],
-              ["protocol", "Protocol"],
-              ["risk", "Risk"],
-              ["boundary", "Boundary"],
-              ["reachability", "Path"]
-            ].map(([mode, label]) => (
+            {viewModeOptions.map(({ mode, label, Icon, title }) => (
               <button
                 key={mode}
                 type="button"
                 className={canvasMode === mode ? "active" : ""}
-                onClick={() => onCanvasModeChange(mode as CanvasMode)}
+                onClick={() => onCanvasModeChange(mode)}
+                title={title}
               >
+                <Icon size={13} aria-hidden="true" />
                 {label}
               </button>
             ))}
@@ -588,6 +662,7 @@ function TopologyCanvasInner({
             <span>· Esc to stop</span>
           </div>
         ) : null}
+        {project.assets.length > 0 ? <CanvasLegend canvasMode={canvasMode} families={legendFamilies} /> : null}
         <aside className={`canvas-hud${hudOpen ? "" : " is-collapsed"}`} aria-label="Advisory rating summary">
           <button
             type="button"
@@ -700,6 +775,20 @@ function TopologyCanvasInner({
               aria-hidden="true"
               style={{ width: contentExtent.overlayWidth, height: contentExtent.overlayHeight }}
             >
+              <defs>
+                <marker
+                  id="conduit-arrow"
+                  viewBox="0 0 12 12"
+                  refX="10.5"
+                  refY="6"
+                  markerWidth="11"
+                  markerHeight="11"
+                  orient="auto-start-reverse"
+                  markerUnits="userSpaceOnUse"
+                >
+                  <path d="M1.5,1.5 L11,6 L1.5,10.5 z" fill="context-stroke" />
+                </marker>
+              </defs>
               {conduitOverlayItems.map((item) => (
                 <g
                   className={`conduit-overlay-edge ${item.labelVisible ? "label-visible" : ""} ${
@@ -717,12 +806,17 @@ function TopologyCanvasInner({
                   <path
                     className="conduit-overlay-path"
                     d={item.path}
+                    markerStart={item.direction !== "source-to-target" ? "url(#conduit-arrow)" : undefined}
+                    markerEnd={item.direction !== "target-to-source" ? "url(#conduit-arrow)" : undefined}
                     style={{
                       stroke: item.color,
                       opacity: item.opacity,
                       strokeDasharray: item.dash
                     }}
                   />
+                  {item.highlighted || item.selected ? (
+                    <path className="conduit-overlay-flow" d={item.path} />
+                  ) : null}
                   <path
                     className="conduit-overlay-hitbox"
                     d={item.path}
@@ -763,15 +857,19 @@ function TopologyCanvasInner({
             className="snap-grid-background"
             color="#64717d"
             gap={CANVAS_GRID_X}
-            lineWidth={0.48}
-            variant={BackgroundVariant.Lines}
+            size={1.1}
+            variant={BackgroundVariant.Dots}
           />
           <MiniMap
             className="canvas-minimap"
             pannable
             zoomable
-            nodeColor={() => "#0f766e"}
-            maskColor="rgba(15, 23, 42, 0.08)"
+            nodeStrokeWidth={2}
+            nodeColor={(node) => {
+              const asset = (node.data as unknown as AssetNodeData).asset;
+              return asset ? getZone(asset.zone).color : "#8e979c";
+            }}
+            maskColor="rgba(10, 11, 12, 0.55)"
           />
           <Controls position="bottom-left" />
         </ReactFlow>
