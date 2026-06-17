@@ -1,5 +1,5 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../../models/types";
-import { asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
+import { applyLayout, asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
 
 const project: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -219,5 +219,5 @@ export const substationScenario: ScenarioMeta = {
   summary:
     "Transmission substation with IEC 61850 protection relays, a station gateway with an ICCP control-centre link, and vendor interactive remote access across the ESP.",
   standards: ["NERC CIP", "IEC 61850", "NIST SP 800-82"],
-  project
+  project: applyLayout(project)
 };

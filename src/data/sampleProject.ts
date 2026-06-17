@@ -1,7 +1,7 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../models/types";
-import { asset, conduitDefaults, controls, laneY } from "./scenarios/builders";
+import { applyLayout, asset, conduitDefaults, controls, laneY } from "./scenarios/builders";
 
-export const sampleProject: OtProject = {
+const sampleProjectBase: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
   id: "sample-purdue-assessment",
   name: "Sample Purdue Assessment",
@@ -348,6 +348,8 @@ export const sampleProject: OtProject = {
     }
   ]
 };
+
+export const sampleProject: OtProject = applyLayout(sampleProjectBase);
 
 export const blankProject: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,

@@ -1313,8 +1313,8 @@ kbd {
 
 .subnet-box {
   position: absolute;
-  border: 1px dashed var(--line-strong);
-  background: color-mix(in srgb, var(--accent) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
 }
 
 .subnet-box-label {

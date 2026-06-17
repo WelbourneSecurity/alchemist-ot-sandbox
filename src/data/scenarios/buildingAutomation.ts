@@ -1,5 +1,5 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../../models/types";
-import { asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
+import { applyLayout, asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
 
 const project: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -227,5 +227,5 @@ export const buildingAutomationScenario: ScenarioMeta = {
   summary:
     "Commercial building automation with a Tridium Niagara supervisor, flat BACnet HVAC controllers, door access, and an internet-facing cloud analytics tunnel.",
   standards: ["ASHRAE 135 (BACnet)", "NIST SP 800-82", "ISA/IEC 62443"],
-  project
+  project: applyLayout(project)
 };

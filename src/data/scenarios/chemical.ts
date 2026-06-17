@@ -1,5 +1,5 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../../models/types";
-import { asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
+import { applyLayout, asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
 
 const project: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -238,5 +238,5 @@ export const chemicalScenario: ScenarioMeta = {
   summary:
     "Batch chemical plant with an Emerson DCS, a separate HIMA safety instrumented system, OPC Classic supervisory traffic, and DCS vendor remote access.",
   standards: ["IEC 61511 (SIS)", "CFATS", "ISA/IEC 62443"],
-  project
+  project: applyLayout(project)
 };
