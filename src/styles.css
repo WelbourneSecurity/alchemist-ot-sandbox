@@ -1523,6 +1523,104 @@ kbd {
   gap: 0.5rem;
 }
 
+.scenario-gallery {
+  width: min(56rem, 100%);
+  max-height: min(85vh, 46rem);
+  overflow: auto;
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.scenario-gallery-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.scenario-gallery-head strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.scenario-gallery-head p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.scenario-sector {
+  align-self: flex-start;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scenario-card strong {
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  color: var(--text);
+}
+
+.scenario-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.scenario-standards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.scenario-standards span {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.scenario-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.scenario-counts {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .asset-node {
   position: relative;
   width: 11.6rem;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { sampleProject, blankProject } from "./data/sampleProject";
+import { scenarios } from "./data/scenarios";
 import { getAssetType } from "./data/catalog";
 import {
   ASSET_NODE_HEIGHT,
@@ -25,6 +26,7 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
+import { ScenarioGallery } from "./components/ScenarioGallery";
 import { PrintableReport } from "./components/PrintableReport";
 import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
 import { ToastViewport } from "./components/ToastViewport";
@@ -73,6 +75,7 @@ export function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
+  const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
   const { layout, togglePalette, toggleDock, setDockHeight, setLayoutMode } = usePanelLayout();
@@ -363,11 +366,15 @@ export function App() {
     pushToast("Exported topology SVG", "success");
   }, [project, assessment, pushToast]);
 
-  const handleLoadSample = useCallback(() => {
-    commitProject(cloneProject(sampleProject));
-    setSelectedId(null);
-    pushToast("Sample project loaded", "info");
-  }, [commitProject, pushToast]);
+  const loadScenario = useCallback(
+    (scenarioProject: OtProject) => {
+      commitProject(cloneProject(scenarioProject));
+      setSelectedId(null);
+      setLayoutMode("network");
+      pushToast(`Loaded ${scenarioProject.name}`, "info");
+    },
+    [commitProject, pushToast, setLayoutMode]
+  );
 
   const handleNewBlank = useCallback(() => {
     commitProject(cloneProject(blankProject));
@@ -437,7 +444,13 @@ export function App() {
 
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [
-      { id: "sample", label: "Load sample project", run: handleLoadSample },
+      { id: "scenarios", label: "Browse sector scenarios…", run: () => setScenarioGalleryOpen(true) },
+      ...scenarios.map((scenario) => ({
+        id: `scenario-${scenario.id}`,
+        label: `Load scenario: ${scenario.name}`,
+        hint: scenario.sector,
+        run: () => loadScenario(scenario.project)
+      })),
       { id: "blank", label: "New blank project", run: handleNewBlank },
       { id: "import", label: "Import project…", hint: "JSON", run: () => importInputRef.current?.click() },
       { id: "import-scan", label: "Import network scan…", hint: "Nmap/Zeek/CSV", run: () => setImportWizardOpen(true) },
@@ -487,7 +500,7 @@ export function App() {
     }
     return list;
   }, [
-    handleLoadSample,
+    loadScenario,
     handleNewBlank,
     handleExportJson,
     handleExportSvg,
@@ -527,7 +540,7 @@ export function App() {
           onExportJson={handleExportJson}
           onExportSvg={handleExportSvg}
           onPrintReport={() => window.print()}
-          onLoadSample={handleLoadSample}
+          onBrowseScenarios={() => setScenarioGalleryOpen(true)}
           onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
@@ -640,6 +653,12 @@ export function App() {
         onRemove={removeSubnet}
       />
       <ImportWizard open={importWizardOpen} onClose={() => setImportWizardOpen(false)} onApply={applyImport} />
+      <ScenarioGallery
+        open={scenarioGalleryOpen}
+        scenarios={scenarios}
+        onClose={() => setScenarioGalleryOpen(false)}
+        onLoad={loadScenario}
+      />
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
 
       <input
