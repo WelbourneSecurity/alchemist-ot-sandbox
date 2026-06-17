@@ -168,6 +168,61 @@ export function subnetBoundingBoxes(
   });
 }
 
+export const NETWORK_TOP_MARGIN = 64;
+export const NETWORK_TIER_STEP = 170;
+export const SUBNET_COLUMN_GAP = 96;
+const NETWORK_COL_STEP = ASSET_NODE_WIDTH + 48;
+
+/** Y for a Purdue zone in the free network layout — generous tiers so subnet boxes clear each other. */
+export function networkTierY(zoneId: ZoneId): number {
+  return NETWORK_TOP_MARGIN + zoneIndex(zoneId) * NETWORK_TIER_STEP;
+}
+
+/**
+ * Arranges assets into a tidy, readable network map: each subnet becomes its own horizontal
+ * column-band (separated by SUBNET_COLUMN_GAP so the containers never touch), and within a band
+ * assets are stacked by Purdue level so levels still read as rows. Same-level members in a band
+ * spread sideways. Ungrouped assets get a trailing band. Deterministic — used for the bundled
+ * presets and the canvas "Arrange" action.
+ */
+export function layoutBySubnet(
+  assets: Array<{ id: string; zone: ZoneId; subnetId?: string }>,
+  subnets: Array<{ id: string }>
+): Map<string, Point> {
+  const validSubnetIds = new Set(subnets.map((subnet) => subnet.id));
+  const positions = new Map<string, Point>();
+
+  const placeBand = (members: Array<{ id: string; zone: ZoneId }>, startX: number): number => {
+    const zoneTotals = new Map<ZoneId, number>();
+    for (const member of members) {
+      zoneTotals.set(member.zone, (zoneTotals.get(member.zone) ?? 0) + 1);
+    }
+    const widthCols = Math.max(1, ...Array.from(zoneTotals.values()));
+    const ordered = [...members].sort((a, b) => zoneIndex(a.zone) - zoneIndex(b.zone) || (a.id < b.id ? -1 : 1));
+    const perZone = new Map<ZoneId, number>();
+    for (const member of ordered) {
+      const column = perZone.get(member.zone) ?? 0;
+      perZone.set(member.zone, column + 1);
+      positions.set(member.id, { x: startX + column * NETWORK_COL_STEP, y: networkTierY(member.zone) });
+    }
+    return startX + widthCols * NETWORK_COL_STEP + SUBNET_COLUMN_GAP;
+  };
+
+  let bandX = ASSET_MIN_X + 40;
+  for (const subnet of subnets) {
+    const members = assets.filter((asset) => asset.subnetId === subnet.id);
+    if (members.length > 0) {
+      bandX = placeBand(members, bandX);
+    }
+  }
+  const ungrouped = assets.filter((asset) => !asset.subnetId || !validSubnetIds.has(asset.subnetId));
+  if (ungrouped.length > 0) {
+    placeBand(ungrouped, bandX);
+  }
+
+  return positions;
+}
+
 /**
  * Returns a grid-snapped x near `desiredX` that does not overlap any other asset in the
  * same zone (assets share a y per zone, so overlap is purely horizontal). Searches outward

@@ -7,6 +7,7 @@ import {
   SUBNET_BOX_PAD,
   SUBNET_LABEL_HEIGHT,
   assetYForZone,
+  layoutBySubnet,
   projectPurduePositions,
   resolveAssetX,
   resolveFreePosition,
@@ -113,5 +114,38 @@ describe("subnetBoundingBoxes", () => {
     expect(box.y).toBe(100 - SUBNET_BOX_PAD - SUBNET_LABEL_HEIGHT);
     expect(box.width).toBe(400 + ASSET_NODE_WIDTH - 100 + SUBNET_BOX_PAD * 2);
     expect(box.height).toBe(200 + ASSET_NODE_HEIGHT - 100 + SUBNET_BOX_PAD * 2 + SUBNET_LABEL_HEIGHT);
+  });
+});
+
+describe("layoutBySubnet", () => {
+  const subnets: Subnet[] = [
+    { id: "sn-a", name: "A", cidr: "", vlan: "" },
+    { id: "sn-b", name: "B", cidr: "", vlan: "" }
+  ];
+  const assets: Array<{ id: string; zone: ZoneId; subnetId?: string }> = [
+    { id: "a1", zone: "level5", subnetId: "sn-a" },
+    { id: "a2", zone: "level1", subnetId: "sn-a" },
+    { id: "a3", zone: "level1", subnetId: "sn-a" },
+    { id: "b1", zone: "level2", subnetId: "sn-b" },
+    { id: "x1", zone: "level3" }
+  ];
+
+  it("stacks higher Purdue levels above lower ones", () => {
+    const positions = layoutBySubnet(assets, subnets);
+    expect(positions.get("a1")!.y).toBeLessThan(positions.get("a2")!.y);
+  });
+
+  it("spreads same-subnet, same-level members sideways", () => {
+    const positions = layoutBySubnet(assets, subnets);
+    expect(positions.get("a2")!.y).toBe(positions.get("a3")!.y);
+    expect(positions.get("a2")!.x).not.toBe(positions.get("a3")!.x);
+  });
+
+  it("gives each subnet a separated column band so containers never overlap horizontally", () => {
+    const positions = layoutBySubnet(assets, subnets);
+    const placed = assets.map((asset) => ({ ...asset, position: positions.get(asset.id)! }));
+    const boxes = subnetBoundingBoxes(placed, subnets).sort((p, q) => p.x - q.x);
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].x + boxes[0].width).toBeLessThanOrEqual(boxes[1].x);
   });
 });

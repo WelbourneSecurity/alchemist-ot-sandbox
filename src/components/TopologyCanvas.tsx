@@ -72,6 +72,8 @@ interface TopologyCanvasProps {
   onCanvasModeChange: (mode: CanvasMode) => void;
   onLayoutModeChange: (mode: LayoutMode) => void;
   onManageSubnets: () => void;
+  onAutoArrange: () => void;
+  fitSignal: number;
   onToggleConnectMode: () => void;
   onFindingSelect: (finding: Finding) => void;
   onRenameAsset: (id: string, name: string) => void;
@@ -241,6 +243,8 @@ function TopologyCanvasInner({
   onCanvasModeChange,
   onLayoutModeChange,
   onManageSubnets,
+  onAutoArrange,
+  fitSignal,
   onToggleConnectMode,
   onFindingSelect,
   onUndo,
@@ -323,6 +327,16 @@ function TopologyCanvasInner({
     const frame = window.requestAnimationFrame(() => void reactFlow.fitView({ padding: 0.16, duration: 320 }));
     return () => window.cancelAnimationFrame(frame);
   }, [layoutMode, reactFlow]);
+
+  // Explicit refit requests from the app (load a scenario, import, or auto-arrange) frame the
+  // freshly positioned topology. Skips 0 so the initial render keeps the default viewport.
+  useEffect(() => {
+    if (fitSignal === 0) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => void reactFlow.fitView({ padding: 0.16, duration: 320 }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [fitSignal, reactFlow]);
 
   const liveAssets = useMemo(() => {
     const livePositions = new Map(flowNodes.map((node) => [node.id, node.position]));
@@ -540,6 +554,16 @@ function TopologyCanvasInner({
           {!isPurdue ? (
             <button type="button" className="text-button compact" title="Create and edit subnets" onClick={onManageSubnets}>
               Subnets
+            </button>
+          ) : null}
+          {!isPurdue ? (
+            <button
+              type="button"
+              className="text-button compact"
+              title="Tidy the layout into separated subnet columns"
+              onClick={onAutoArrange}
+            >
+              Arrange
             </button>
           ) : null}
           <button type="button" className={`text-button ${connectMode ? "primary" : ""}`} onClick={onToggleConnectMode}>

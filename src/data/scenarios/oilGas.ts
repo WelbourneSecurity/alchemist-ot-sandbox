@@ -1,5 +1,5 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../../models/types";
-import { asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
+import { applyLayout, asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
 
 const project: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -258,5 +258,5 @@ export const oilGasScenario: ScenarioMeta = {
   summary:
     "Gas transmission pipeline with a SCADA master polling obsolete wellhead RTUs and custody flow computers over cellular/satellite, plus leak detection and a compressor station.",
   standards: ["TSA Pipeline SD", "API 1164", "NIST SP 800-82"],
-  project
+  project: applyLayout(project)
 };

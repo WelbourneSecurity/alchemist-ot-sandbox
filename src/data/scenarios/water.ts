@@ -1,5 +1,5 @@
 import { PROJECT_SCHEMA_VERSION, type OtProject } from "../../models/types";
-import { asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
+import { applyLayout, asset, conduit, controls, laneY, type ScenarioMeta } from "./builders";
 
 const project: OtProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -272,5 +272,5 @@ export const waterScenario: ScenarioMeta = {
   summary:
     "Municipal water treatment plant with SCADA-polled pump and dosing PLCs, radio-linked lift stations, and an integrator remote-access path.",
   standards: ["AWWA / EPA", "CISA Water Sector", "NIST SP 800-82"],
-  project
+  project: applyLayout(project)
 };

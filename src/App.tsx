@@ -7,6 +7,7 @@ import {
   ASSET_NODE_WIDTH,
   assetYForZone,
   inferZoneFromY,
+  layoutBySubnet,
   resolveFreePosition,
   snapToGrid
 } from "./data/canvasLayout";
@@ -76,6 +77,7 @@ export function App() {
   const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
+  const [fitSignal, setFitSignal] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
   const { layout, togglePalette, toggleDock, setDockHeight, setLayoutMode } = usePanelLayout();
@@ -293,6 +295,19 @@ export function App() {
     setSubnetManagerOpen(true);
   }, [setLayoutMode]);
 
+  const autoArrangeLayout = useCallback(() => {
+    commitProject((current) => {
+      const positions = layoutBySubnet(current.assets, current.subnets ?? []);
+      return {
+        ...current,
+        assets: current.assets.map((asset) => ({ ...asset, position: positions.get(asset.id) ?? asset.position }))
+      };
+    });
+    setLayoutMode("network");
+    setFitSignal((value) => value + 1);
+    pushToast("Arranged into subnet columns", "info");
+  }, [commitProject, pushToast, setLayoutMode]);
+
   const applyImport = useCallback(
     (result: AssembledTopology, mode: "replace" | "merge") => {
       commitProject((current) => {
@@ -320,6 +335,7 @@ export function App() {
       });
       setLayoutMode("network");
       setSelectedId(null);
+      setFitSignal((value) => value + 1);
       pushToast(`Imported ${result.assets.length} assets and ${result.conduits.length} conduits`, "success");
     },
     [commitProject, pushToast, setLayoutMode]
@@ -371,6 +387,7 @@ export function App() {
       commitProject(cloneProject(scenarioProject));
       setSelectedId(null);
       setLayoutMode("network");
+      setFitSignal((value) => value + 1);
       pushToast(`Loaded ${scenarioProject.name}`, "info");
     },
     [commitProject, pushToast, setLayoutMode]
@@ -471,6 +488,7 @@ export function App() {
         run: () => setLayoutMode("purdue")
       },
       { id: "subnets", label: "Manage subnets…", run: openSubnetManager },
+      { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
       { id: "dock", label: layout.dockOpen ? "Collapse analysis dock" : "Expand analysis dock", run: toggleDock },
@@ -509,6 +527,7 @@ export function App() {
     toggleDock,
     setLayoutMode,
     openSubnetManager,
+    autoArrangeLayout,
     layout.paletteOpen,
     layout.dockOpen,
     layout.layoutMode,
@@ -585,6 +604,8 @@ export function App() {
             }}
             onLayoutModeChange={setLayoutMode}
             onManageSubnets={openSubnetManager}
+            onAutoArrange={autoArrangeLayout}
+            fitSignal={fitSignal}
             onToggleConnectMode={handleToggleConnectMode}
             onFindingSelect={handleFindingSelect}
             onRenameAsset={renameAsset}
