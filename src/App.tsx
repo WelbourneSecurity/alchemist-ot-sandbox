@@ -40,6 +40,7 @@ import { CommandPalette, type Command } from "./components/CommandPalette";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { GovernanceEditor } from "./components/GovernanceEditor";
+import { KnowledgeBase } from "./components/KnowledgeBase";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
 import { ScenarioGallery } from "./components/ScenarioGallery";
@@ -92,6 +93,7 @@ export function App() {
   const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [governanceOpen, setGovernanceOpen] = useState(false);
+  const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
   const [fitSignal, setFitSignal] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -546,6 +548,7 @@ export function App() {
       },
       { id: "subnets", label: "Manage subnets…", run: openSubnetManager },
       { id: "governance", label: "Edit engagement context…", hint: "GRC", run: () => setGovernanceOpen(true) },
+      { id: "knowledge", label: "Open knowledge base…", hint: "Reference", run: () => setKnowledgeBaseOpen(true) },
       { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
@@ -618,6 +621,7 @@ export function App() {
           onExportSvg={handleExportSvg}
           onPrintReport={() => window.print()}
           onBrowseScenarios={() => setScenarioGalleryOpen(true)}
+          onOpenKnowledgeBase={() => setKnowledgeBaseOpen(true)}
           onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
@@ -741,6 +745,7 @@ export function App() {
         onClose={() => setGovernanceOpen(false)}
         onSave={setEngagement}
       />
+      <KnowledgeBase open={knowledgeBaseOpen} onClose={() => setKnowledgeBaseOpen(false)} />
       <ScenarioGallery
         open={scenarioGalleryOpen}
         scenarios={scenarios}
