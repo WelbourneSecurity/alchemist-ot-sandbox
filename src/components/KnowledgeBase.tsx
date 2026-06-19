@@ -1,10 +1,27 @@
-import { ExternalLink, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ExternalLink, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { kbKindGroups, knowledgeBase, topicKind } from "../data/knowledgeBase";
 
 interface KnowledgeBaseProps {
   open: boolean;
   onClose: () => void;
+}
+
+/**
+ * Emphasise a short leading "Term:" or clause label (e.g. "Network: …", "3-2: …") so the dense
+ * reference bullets scan faster. Plain sentences are returned untouched.
+ */
+function renderPoint(point: string) {
+  const match = point.match(/^([A-Za-z0-9][\w &/().+-]{0,24}):\s+(.+)$/);
+  if (!match) {
+    return point;
+  }
+  return (
+    <>
+      <strong className="kb-term">{match[1]}</strong>
+      {`: ${match[2]}`}
+    </>
+  );
 }
 
 /**
@@ -14,6 +31,7 @@ interface KnowledgeBaseProps {
  */
 export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
   const [selectedId, setSelectedId] = useState(knowledgeBase[0].id);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!open) {
@@ -27,6 +45,23 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
+
+  // Start each visit from a clean filter.
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) {
+      return knowledgeBase;
+    }
+    return knowledgeBase.filter((entry) =>
+      `${entry.title} ${entry.category} ${entry.summary}`.toLowerCase().includes(needle)
+    );
+  }, [query]);
 
   if (!open) {
     return null;
@@ -55,27 +90,46 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
 
         <div className="kb-body">
           <nav className="kb-nav" aria-label="Topics">
-            {kbKindGroups.map((group) => {
-              const topics = knowledgeBase.filter((entry) => topicKind(entry) === group.kind);
-              if (topics.length === 0) {
-                return null;
-              }
-              return (
-                <div className="kb-nav-group" key={group.kind}>
-                  <h4>{group.label}</h4>
-                  {topics.map((entry) => (
-                    <button
-                      type="button"
-                      key={entry.id}
-                      className={`kb-nav-item${entry.id === selectedId ? " active" : ""}`}
-                      onClick={() => setSelectedId(entry.id)}
-                    >
-                      {entry.title}
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
+            <div className="kb-search">
+              <Search size={14} aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Filter topics…"
+                aria-label="Filter topics"
+                autoFocus
+              />
+            </div>
+            <div className="kb-nav-list">
+              {kbKindGroups.map((group) => {
+                const topics = filtered.filter((entry) => topicKind(entry) === group.kind);
+                if (topics.length === 0) {
+                  return null;
+                }
+                return (
+                  <div className="kb-nav-group" key={group.kind}>
+                    <h4>
+                      {group.label}
+                      <span>{topics.length}</span>
+                    </h4>
+                    {topics.map((entry) => (
+                      <button
+                        type="button"
+                        key={entry.id}
+                        className={`kb-nav-item${entry.id === selectedId ? " active" : ""}`}
+                        onClick={() => setSelectedId(entry.id)}
+                      >
+                        {entry.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+              {filtered.length === 0 ? (
+                <p className="kb-nav-empty">No topics match “{query.trim()}”.</p>
+              ) : null}
+            </div>
           </nav>
 
           <article className="kb-article">
@@ -88,7 +142,7 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
                 <h4>{section.heading}</h4>
                 <ul>
                   {section.points.map((point) => (
-                    <li key={point}>{point}</li>
+                    <li key={point}>{renderPoint(point)}</li>
                   ))}
                 </ul>
               </section>
