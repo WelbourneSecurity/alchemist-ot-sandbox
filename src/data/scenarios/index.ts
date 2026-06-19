@@ -2,9 +2,14 @@ import { sampleProject } from "../sampleProject";
 import type { ScenarioMeta } from "./builders";
 import { buildingAutomationScenario } from "./buildingAutomation";
 import { chemicalScenario } from "./chemical";
+import { dataCentreScenario } from "./dataCentre";
+import { nuclearScenario } from "./nuclear";
 import { oilGasScenario } from "./oilGas";
+import { pharmaScenario } from "./pharma";
+import { railScenario } from "./rail";
 import { substationScenario } from "./substation";
 import { waterScenario } from "./water";
+import { windScenario } from "./wind";
 
 export type { ScenarioMeta } from "./builders";
 
@@ -25,5 +30,10 @@ export const scenarios: ScenarioMeta[] = [
   substationScenario,
   chemicalScenario,
   buildingAutomationScenario,
-  oilGasScenario
+  oilGasScenario,
+  railScenario,
+  pharmaScenario,
+  dataCentreScenario,
+  windScenario,
+  nuclearScenario
 ];

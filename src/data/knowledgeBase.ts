@@ -1,20 +1,50 @@
-export type KbCategory = "Frameworks" | "Asset & risk" | "Architecture" | "Operations";
+export type KbCategory = "Frameworks" | "Asset & risk" | "Architecture" | "Operations" | "Sector";
+
+/** The kind of resource — drives how the library groups and renders a topic. */
+export type KbKind = "concept" | "guide" | "checklist" | "cheatsheet" | "resource";
 
 export interface KbSection {
   heading: string;
   points: string[];
 }
 
+export interface KbTable {
+  columns: string[];
+  rows: string[][];
+}
+
+export interface KbLink {
+  label: string;
+  url: string;
+  note?: string;
+}
+
 export interface KbTopic {
   id: string;
   title: string;
+  /** Defaults to "concept" when omitted (see `topicKind`). */
+  kind?: KbKind;
   category: KbCategory;
   summary: string;
   sections: KbSection[];
+  table?: KbTable;
+  links?: KbLink[];
   references: string[];
 }
 
-export const kbCategories: KbCategory[] = ["Frameworks", "Asset & risk", "Architecture", "Operations"];
+export const kbCategories: KbCategory[] = ["Frameworks", "Asset & risk", "Architecture", "Operations", "Sector"];
+
+export const kbKindGroups: Array<{ kind: KbKind; label: string }> = [
+  { kind: "concept", label: "Concepts & frameworks" },
+  { kind: "guide", label: "Guides & playbooks" },
+  { kind: "checklist", label: "Checklists & templates" },
+  { kind: "cheatsheet", label: "Cheat-sheets" },
+  { kind: "resource", label: "Resources & links" }
+];
+
+export function topicKind(topic: KbTopic): KbKind {
+  return topic.kind ?? "concept";
+}
 
 /**
  * A browsable OT reference library for engineers and consultants — frameworks, asset
@@ -281,5 +311,393 @@ export const knowledgeBase: KbTopic[] = [
       }
     ],
     references: ["NCSC CAF Principle A4", "ISA/IEC 62443-2-4", "ISA/IEC 62443-4-1 / 4-2"]
+  },
+  {
+    id: "nuclear-high-consequence-ot",
+    category: "Sector",
+    title: "Nuclear & high-consequence OT",
+    summary:
+      "Illustrative reference only. High-consequence OT (nuclear, major-hazard) layers cyber security on top of safety, under sector regulation and international guidance.",
+    sections: [
+      {
+        heading: "Regulation & guidance",
+        points: [
+          "IAEA Nuclear Security Series — NSS 17 (computer security at nuclear facilities), NSS 42-G and NSS 33-T.",
+          "UK: the Office for Nuclear Regulation (ONR) takes a CAF-based approach to cyber security & information assurance (CS&IA), under the Security Assessment Principles (SyAPs) and NISR 2003.",
+          "Security measures must never undermine nuclear safety — the two are managed together."
+        ]
+      },
+      {
+        heading: "Defining principles",
+        points: [
+          "Graded approach: protection proportionate to consequence and an asset's role in safety and security functions.",
+          "Defence in depth, and protection of the 'vital digital assets' that support safety functions.",
+          "Strong segregation of safety I&C from lower-assurance systems; one-way data flows out of the highest-assurance zones."
+        ]
+      }
+    ],
+    references: ["IAEA NSS 17", "IAEA NSS 42-G", "ONR SyAPs / CAF (CS&IA)", "NISR 2003"]
+  },
+  {
+    id: "safety-vs-security",
+    category: "Architecture",
+    title: "Safety vs security & safety I&C",
+    summary:
+      "Safety instrumented systems protect people and plant deterministically; security protects them from deliberate interference. In high-consequence OT the two are independent but complementary.",
+    sections: [
+      {
+        heading: "Keep safety independent",
+        points: [
+          "Safety I&C / SIS should be independent of the basic process control system — separate logic solver and network.",
+          "Prefer simple, deterministic, well-understood safety logic over feature-rich connectivity.",
+          "Where the safety layer must publish data, use one-way gateways / data diodes so it cannot be written to from outside."
+        ]
+      },
+      {
+        heading: "Manage them together",
+        points: [
+          "A security change must never invalidate a safety case — involve safety engineering in OT security decisions.",
+          "Bring OT security into management-of-change and functional safety assessment."
+        ]
+      }
+    ],
+    references: ["IEC 61511 (SIS)", "ISA/IEC 62443-3-3 FR5", "IAEA NSS 17"]
+  },
+  {
+    id: "guide-asset-inventory",
+    kind: "guide",
+    category: "Asset & risk",
+    title: "Build an OT asset inventory",
+    summary: "A step-by-step approach to discovering and recording OT assets and data flows without disturbing the process.",
+    sections: [
+      {
+        heading: "Steps",
+        points: [
+          "1. Define scope and the essential function; agree what 'in scope' means with operations and safety.",
+          "2. Start passive: mirror traffic (SPAN/TAP) into a tool such as Zeek or GRASSMARLIN to enumerate hosts, protocols and flows.",
+          "3. Enrich from authoritative sources: vendor/system exports, network diagrams, firewall configs, CMDB.",
+          "4. Validate with physical walkdowns for Level 0/1 field devices that are invisible on the network.",
+          "5. Record make/model/firmware, owner, criticality, zone/conduit, address and security posture.",
+          "6. Use only careful, scheduled, rate-limited active scanning to fill gaps — never blind-scan live control networks.",
+          "7. Tie updates to management-of-change so the inventory stays current."
+        ]
+      }
+    ],
+    references: ["NCSC CAF A3", "NIST SP 800-82 Rev. 3", "CISA OT asset inventory guidance"]
+  },
+  {
+    id: "guide-purdue-segmentation",
+    kind: "guide",
+    category: "Architecture",
+    title: "Design Purdue zones & conduits",
+    summary: "How to partition an OT network into zones and conduits per ISA/IEC 62443-3-2.",
+    sections: [
+      {
+        heading: "Steps",
+        points: [
+          "1. Group assets of similar risk and function into zones, often aligned to Purdue levels.",
+          "2. Identify every required flow between zones and define it as a conduit — deny everything else.",
+          "3. Publish IT→OT services through an IT/OT DMZ; never allow direct enterprise→control connections.",
+          "4. Set a target Security Level (SL-T) per zone from a risk assessment; design controls to meet it.",
+          "5. Broker administrative access via jump hosts; use data diodes for one-way historian/telemetry flows.",
+          "6. Document conduit ownership, rules and review dates; remove temporary rules."
+        ]
+      }
+    ],
+    references: ["ISA/IEC 62443-3-2", "ISA/IEC 62443-3-3 FR5", "NIST SP 800-82 Rev. 3"]
+  },
+  {
+    id: "guide-remote-access",
+    kind: "guide",
+    category: "Operations",
+    title: "Harden & broker remote access",
+    summary: "Make vendor and engineer remote access on-demand, brokered, authenticated and monitored.",
+    sections: [
+      {
+        heading: "Steps",
+        points: [
+          "1. Terminate all external access in the IT/OT DMZ — no direct path to control assets.",
+          "2. Broker every session through a jump host / PAM; named accounts, least privilege, no shared logins.",
+          "3. Enforce MFA and remove default and standing credentials.",
+          "4. Make access on-demand and time-boxed; require approval and a business justification.",
+          "5. Record and monitor sessions; alert on out-of-hours or unexpected engineering activity.",
+          "6. Review and revoke access regularly; check what integrators left behind after commissioning."
+        ]
+      }
+    ],
+    references: ["NCSC CAF A4 & B2", "ISA/IEC 62443-3-3", "CISA remote access guidance"]
+  },
+  {
+    id: "guide-sl-assessment",
+    kind: "guide",
+    category: "Frameworks",
+    title: "Run an IEC 62443 Security Level assessment",
+    summary: "Assess a zone's achieved Security Level (SL-A) against its target (SL-T) using the seven Foundational Requirements.",
+    sections: [
+      {
+        heading: "Steps",
+        points: [
+          "1. Confirm zones and conduits, and the target SL (SL-T) per zone from the risk assessment (62443-3-2).",
+          "2. Assess controls against each Foundational Requirement (FR1–FR7) for the zone and its conduits.",
+          "3. Take the zone SL-A as the weakest FR — the chain is only as strong as its weakest link.",
+          "4. Record the gap (SL-T minus SL-A) and which FR is limiting.",
+          "5. Plan remediation against the limiting FRs; re-assess after changes."
+        ]
+      }
+    ],
+    references: ["ISA/IEC 62443-3-3", "ISA/IEC 62443-3-2"]
+  },
+  {
+    id: "guide-safe-discovery",
+    kind: "guide",
+    category: "Operations",
+    title: "Safe OT network discovery",
+    summary: "Enumerate OT networks without disrupting fragile devices or the process.",
+    sections: [
+      {
+        heading: "Principles",
+        points: [
+          "Passive first: SPAN/TAP plus a protocol-aware tool (Zeek, GRASSMARLIN) reveals hosts and flows with zero risk.",
+          "Treat active scanning as intrusive: legacy PLCs and field devices can crash under aggressive scans.",
+          "If you must scan actively — get approval, schedule a window, rate-limit, avoid aggressive timing, and watch the process.",
+          "Never run vulnerability scanners against live safety or control systems without explicit sign-off.",
+          "Capture results into the asset register and reconcile with walkdowns."
+        ]
+      }
+    ],
+    references: ["NIST SP 800-82 Rev. 3", "CISA OT guidance"]
+  },
+  {
+    id: "checklist-asset-register",
+    kind: "checklist",
+    category: "Asset & risk",
+    title: "OT asset register fields",
+    summary: "The fields a usable OT asset register should capture.",
+    sections: [
+      {
+        heading: "Per asset",
+        points: [
+          "Name/tag and function; criticality to the essential function.",
+          "Make, model, firmware/OS version and lifecycle status (supported / limited / end-of-life).",
+          "Network: IP/MAC, VLAN/subnet, Purdue zone and the conduits it uses.",
+          "Protocols and exposed services; physical location / site area.",
+          "Owner; patch level; backup status; MFA and default-credential status.",
+          "Links to the risks, findings and treatments that affect it."
+        ]
+      }
+    ],
+    references: ["NCSC CAF A3", "ISA/IEC 62443-2-1"]
+  },
+  {
+    id: "checklist-remote-access",
+    kind: "checklist",
+    category: "Operations",
+    title: "Secure remote access checklist",
+    summary: "Review checklist for OT remote access.",
+    sections: [
+      {
+        heading: "Check",
+        points: [
+          "No direct external path to control assets — access terminates in the IT/OT DMZ.",
+          "Brokered via jump host / PAM with named accounts and least privilege.",
+          "MFA enforced; default and shared credentials removed.",
+          "Access is on-demand, approved and time-boxed.",
+          "Sessions recorded and monitored; alerting on anomalies.",
+          "Access list reviewed; dormant and ex-vendor accounts removed."
+        ]
+      }
+    ],
+    references: ["NCSC CAF A4 & B2", "ISA/IEC 62443-3-3"]
+  },
+  {
+    id: "checklist-conduit-review",
+    kind: "checklist",
+    category: "Architecture",
+    title: "Conduit / firewall rule review",
+    summary: "Review checklist for cross-zone conduits and firewall rules.",
+    sections: [
+      {
+        heading: "Per conduit / rule",
+        points: [
+          "Documented business justification and owner.",
+          "Least privilege: specific source, destination, port and protocol — no any-any.",
+          "Direction enforced; one-way where possible (data diode for telemetry out of high-assurance zones).",
+          "Inspected and logged at the boundary.",
+          "No undocumented or expired temporary rules; review date set.",
+          "Cleartext legacy protocols not permitted across trust boundaries."
+        ]
+      }
+    ],
+    references: ["ISA/IEC 62443-3-3 FR5", "NCSC CAF B5"]
+  },
+  {
+    id: "checklist-ir-runbook",
+    kind: "checklist",
+    category: "Operations",
+    title: "OT incident response runbook",
+    summary: "A template set of steps for an OT cyber incident.",
+    sections: [
+      {
+        heading: "Runbook",
+        points: [
+          "Prepare: roles, contacts, safe-state procedures, offline backups and a tested recovery plan.",
+          "Detect & triage: confirm, classify and assess impact on safety and the essential function.",
+          "Contain: isolate affected segments without compromising safety; involve operations and safety engineering.",
+          "Eradicate & recover: rebuild from validated golden images / backups; verify integrity before reconnecting.",
+          "Communicate: notify management and the regulator / national authority where required.",
+          "Review: feed post-incident lessons back into controls and training."
+        ]
+      }
+    ],
+    references: ["NCSC CAF D1 & D2", "NIST SP 800-82 Rev. 3"]
+  },
+  {
+    id: "checklist-vendor-onboarding",
+    kind: "checklist",
+    category: "Asset & risk",
+    title: "Vendor / supply-chain onboarding",
+    summary: "Checklist for bringing an OT supplier or integrator on board.",
+    sections: [
+      {
+        heading: "Check",
+        points: [
+          "Security requirements set in the contract, with a right to audit.",
+          "Products built to a secure development lifecycle (62443-4-1) where available.",
+          "Vendor remote access brokered, MFA'd, time-boxed and monitored.",
+          "Component and firmware integrity verified; provenance understood.",
+          "Commissioning artefacts (default creds, test accounts, temporary rules) removed at handover."
+        ]
+      }
+    ],
+    references: ["NCSC CAF A4", "ISA/IEC 62443-2-4", "ISA/IEC 62443-4-1 / 4-2"]
+  },
+  {
+    id: "cheatsheet-protocols-ports",
+    kind: "cheatsheet",
+    category: "Architecture",
+    title: "OT protocols & ports",
+    summary: "Common industrial protocols, their default ports and their security posture.",
+    sections: [],
+    table: {
+      columns: ["Protocol", "Port", "Transport", "Security note"],
+      rows: [
+        ["Modbus TCP", "502", "TCP", "No auth/encryption — restrict peers"],
+        ["DNP3", "20000", "TCP/UDP", "Add Secure Authentication; often cleartext"],
+        ["EtherNet/IP", "44818 / 2222", "TCP/UDP", "CIP — no native security"],
+        ["PROFINET", "34962-34964", "TCP/UDP", "No native security; L2-sensitive"],
+        ["S7comm", "102", "TCP", "Siemens; no native authentication"],
+        ["OPC UA", "4840", "TCP", "Can be secured — verify policies/certs"],
+        ["OPC DA (DCOM)", "135 + dynamic", "TCP", "Legacy DCOM — hard to firewall"],
+        ["IEC 61850 MMS", "102", "TCP", "Substations; GOOSE/SV are L2 multicast"],
+        ["IEC 60870-5-104", "2404", "TCP", "Telecontrol; no native security"],
+        ["BACnet/IP", "47808", "UDP", "Building automation; no native security"],
+        ["HTTPS", "443", "TCP", "Encrypted — verify certificate ownership"],
+        ["RDP", "3389", "TCP", "Remote desktop — broker and require MFA"]
+      ]
+    },
+    references: ["ISA/IEC 62443-3-3 FR3/FR4", "NIST SP 800-82 Rev. 3"]
+  },
+  {
+    id: "cheatsheet-attack-ics",
+    kind: "cheatsheet",
+    category: "Operations",
+    title: "MITRE ATT&CK for ICS — tactics",
+    summary: "The tactics an adversary moves through against industrial control systems.",
+    sections: [],
+    table: {
+      columns: ["Tactic", "What the adversary is doing"],
+      rows: [
+        ["Initial Access", "Get into the OT environment (remote services, internet-exposed device, supply chain)"],
+        ["Execution", "Run code or commands on OT systems"],
+        ["Persistence", "Maintain a foothold (modify program or firmware)"],
+        ["Privilege Escalation", "Gain higher rights or exploit a vulnerability"],
+        ["Evasion", "Avoid detection (indicator removal, rogue master)"],
+        ["Discovery", "Map the control network and assets"],
+        ["Lateral Movement", "Move toward the process (program download, default credentials)"],
+        ["Collection", "Gather process and configuration data"],
+        ["Command and Control", "Communicate with the implant"],
+        ["Inhibit Response Function", "Disable alarms, safety or protection"],
+        ["Impair Process Control", "Manipulate control logic or setpoints"],
+        ["Impact", "Loss of control, view, safety or availability"]
+      ]
+    },
+    references: ["MITRE ATT&CK for ICS"]
+  },
+  {
+    id: "cheatsheet-62443-fr",
+    kind: "cheatsheet",
+    category: "Frameworks",
+    title: "IEC 62443 Foundational Requirements",
+    summary: "The seven FRs a zone's Security Level is judged against (62443-3-3).",
+    sections: [],
+    table: {
+      columns: ["FR", "Name", "Focus"],
+      rows: [
+        ["FR1", "Identification & authentication control", "Who/what can access — accounts, MFA"],
+        ["FR2", "Use control", "Least privilege, authorisation, approval"],
+        ["FR3", "System integrity", "Patching, hardening, anti-malware, anti-tamper"],
+        ["FR4", "Data confidentiality", "Protect data in transit/at rest; no cleartext"],
+        ["FR5", "Restricted data flow", "Zones & conduits; segmentation"],
+        ["FR6", "Timely response to events", "Monitoring, logging, alerting"],
+        ["FR7", "Resource availability", "Backups, resilience, DoS protection"]
+      ]
+    },
+    references: ["ISA/IEC 62443-3-3"]
+  },
+  {
+    id: "cheatsheet-caf",
+    kind: "cheatsheet",
+    category: "Frameworks",
+    title: "NCSC CAF objectives & principles",
+    summary: "The four objectives and fourteen principles of the NCSC Cyber Assessment Framework.",
+    sections: [],
+    table: {
+      columns: ["Objective", "Principles"],
+      rows: [
+        ["A — Managing security risk", "A1 Governance · A2 Risk management · A3 Asset management · A4 Supply chain"],
+        [
+          "B — Protecting against cyber attack",
+          "B1 Policies & processes · B2 Identity & access · B3 Data security · B4 System security · B5 Resilient networks · B6 Staff awareness"
+        ],
+        ["C — Detecting cyber security events", "C1 Security monitoring · C2 Proactive event discovery"],
+        ["D — Minimising the impact", "D1 Response & recovery planning · D2 Lessons learned"]
+      ]
+    },
+    references: ["NCSC Cyber Assessment Framework"]
+  },
+  {
+    id: "resource-standards",
+    kind: "resource",
+    category: "Frameworks",
+    title: "Standards & frameworks",
+    summary: "Authoritative standards and frameworks for OT/ICS security.",
+    sections: [],
+    links: [
+      {
+        label: "ISA/IEC 62443 series (ISA)",
+        url: "https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series-of-standards"
+      },
+      { label: "NIST SP 800-82 Rev. 3 — Guide to OT Security", url: "https://csrc.nist.gov/pubs/sp/800/82/r3/final" },
+      { label: "NIST Cybersecurity Framework 2.0", url: "https://www.nist.gov/cyberframework" },
+      { label: "NCSC Cyber Assessment Framework (CAF)", url: "https://www.ncsc.gov.uk/collection/cyber-assessment-framework" },
+      { label: "IAEA Nuclear Security Series", url: "https://www.iaea.org/resources/nuclear-security-series" }
+    ],
+    references: []
+  },
+  {
+    id: "resource-authorities",
+    kind: "resource",
+    category: "Operations",
+    title: "Authorities, advisories & community",
+    summary: "Where to get OT threat intelligence, advisories and learning.",
+    sections: [],
+    links: [
+      { label: "NCSC (UK)", url: "https://www.ncsc.gov.uk/", note: "Guidance & CAF" },
+      { label: "CISA — Industrial Control Systems", url: "https://www.cisa.gov/topics/industrial-control-systems", note: "ICS advisories" },
+      { label: "MITRE ATT&CK for ICS", url: "https://attack.mitre.org/matrices/ics/" },
+      { label: "SANS ICS Security", url: "https://www.sans.org/industrial-control-systems-security/", note: "Training & resources" },
+      { label: "ISA Global Cybersecurity Alliance", url: "https://gca.isa.org/" }
+    ],
+    references: []
   }
 ];
