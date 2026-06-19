@@ -15,7 +15,21 @@ import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
-import type { Asset, AssetTypeId, CanvasMode, Conduit, Finding, OtProject, Point, Subnet, ZoneId } from "./models/types";
+import type {
+  Asset,
+  AssetTypeId,
+  CafPrincipleId,
+  CafStatus,
+  CanvasMode,
+  Conduit,
+  EngagementContext,
+  Finding,
+  OtProject,
+  Point,
+  RiskTreatment,
+  Subnet,
+  ZoneId
+} from "./models/types";
 import { createAsset, createConduit, makeId } from "./models/factory";
 import type { AssembledTopology } from "./import";
 import { AnalysisPanel } from "./components/AnalysisPanel";
@@ -25,6 +39,7 @@ import { CollapsedRail } from "./components/CollapsedRail";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
+import { GovernanceEditor } from "./components/GovernanceEditor";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
 import { ScenarioGallery } from "./components/ScenarioGallery";
@@ -76,6 +91,7 @@ export function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [subnetManagerOpen, setSubnetManagerOpen] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
+  const [governanceOpen, setGovernanceOpen] = useState(false);
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
   const [fitSignal, setFitSignal] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -254,6 +270,47 @@ export function App() {
   const setZoneTarget = useCallback(
     (zone: ZoneId, target: number) => {
       commitProject((current) => ({ ...current, zoneTargets: { ...current.zoneTargets, [zone]: target } }));
+    },
+    [commitProject]
+  );
+
+  const setEngagement = useCallback(
+    (engagement: EngagementContext) => {
+      commitProject((current) => ({ ...current, engagement }));
+      pushToast("Engagement context saved", "success");
+    },
+    [commitProject, pushToast]
+  );
+
+  const setCafOverride = useCallback(
+    (principle: CafPrincipleId, status: CafStatus | null) => {
+      commitProject((current) => {
+        const overrides = { ...(current.cafOverrides ?? {}) };
+        if (status === null) {
+          delete overrides[principle];
+        } else {
+          overrides[principle] = { status };
+        }
+        return { ...current, cafOverrides: overrides };
+      });
+    },
+    [commitProject]
+  );
+
+  const setRiskTreatment = useCallback(
+    (assetId: string, patch: Partial<RiskTreatment>) => {
+      commitProject((current) => {
+        const existing = current.riskTreatments?.[assetId];
+        const next: RiskTreatment = {
+          decision: existing?.decision ?? "mitigate",
+          owner: existing?.owner ?? "",
+          targetDate: existing?.targetDate ?? "",
+          notes: existing?.notes ?? "",
+          residual: existing?.residual,
+          ...patch
+        };
+        return { ...current, riskTreatments: { ...(current.riskTreatments ?? {}), [assetId]: next } };
+      });
     },
     [commitProject]
   );
@@ -488,6 +545,7 @@ export function App() {
         run: () => setLayoutMode("purdue")
       },
       { id: "subnets", label: "Manage subnets…", run: openSubnetManager },
+      { id: "governance", label: "Edit engagement context…", hint: "GRC", run: () => setGovernanceOpen(true) },
       { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
@@ -643,6 +701,9 @@ export function App() {
             dockOpen={layout.dockOpen}
             onToggleDock={toggleDock}
             onZoneTargetChange={setZoneTarget}
+            onCafOverrideChange={setCafOverride}
+            onRiskTreatmentChange={setRiskTreatment}
+            onEditGovernance={() => setGovernanceOpen(true)}
           />
         </section>
       </main>
@@ -674,6 +735,12 @@ export function App() {
         onRemove={removeSubnet}
       />
       <ImportWizard open={importWizardOpen} onClose={() => setImportWizardOpen(false)} onApply={applyImport} />
+      <GovernanceEditor
+        open={governanceOpen}
+        engagement={project.engagement}
+        onClose={() => setGovernanceOpen(false)}
+        onSave={setEngagement}
+      />
       <ScenarioGallery
         open={scenarioGalleryOpen}
         scenarios={scenarios}

@@ -13,6 +13,39 @@ describe("project serialization", () => {
     }
   });
 
+  it("round-trips the GRC fields (engagement, CAF overrides, risk treatments)", () => {
+    const withGrc = {
+      ...sampleProject,
+      engagement: {
+        organisation: "Acme Water",
+        sector: "Water",
+        regime: "NIS Regulations 2018",
+        assessor: "A. Welbourne",
+        assessmentDate: "2026-06-19",
+        scope: "Treatment plant OT",
+        limitations: "Logical model only"
+      },
+      cafOverrides: { B2: { status: "achieved" as const, note: "MFA enforced" } },
+      riskTreatments: {
+        [sampleProject.assets[0].id]: {
+          decision: "mitigate" as const,
+          owner: "OT lead",
+          targetDate: "2026-09-01",
+          notes: "Segment the cell",
+          residual: 6
+        }
+      }
+    };
+    const result = parseProjectJson(serializeProject(withGrc));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.project.engagement?.organisation).toBe("Acme Water");
+      expect(result.project.cafOverrides?.B2?.status).toBe("achieved");
+      expect(result.project.riskTreatments?.[sampleProject.assets[0].id]?.decision).toBe("mitigate");
+    }
+  });
+
   it("rejects conduits that reference missing assets", () => {
     const invalid = {
       ...sampleProject,
