@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Building2,
   ChevronDown,
   ChevronUp,
   Crosshair,
@@ -10,17 +11,46 @@ import {
   ListFilter,
   Printer,
   Route,
+  Scale,
   ShieldCheck,
   type LucideIcon
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
+import { cafObjectives, cafPrinciplesForObjective } from "../data/caf";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
-import type { CanvasMode, Finding, OtProject, ReachabilityResult, SecurityAssessment, Severity, ZoneId } from "../models/types";
+import type {
+  CafPrincipleId,
+  CafStatus,
+  CanvasMode,
+  Finding,
+  OtProject,
+  ReachabilityResult,
+  RiskTreatment,
+  RiskTreatmentDecision,
+  SecurityAssessment,
+  Severity,
+  ZoneId
+} from "../models/types";
 import { assessSecurityLevels, foundationalRequirements } from "../engine/securityLevels";
+import { assessCaf } from "../engine/caf";
 import { icsTactics, icsTechniques } from "../data/attackIcs";
 import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
 import { VerdictBanner } from "./VerdictBanner";
+
+const CAF_STATUS_LABEL: Record<CafStatus, string> = {
+  achieved: "Achieved",
+  partial: "Partially",
+  "not-achieved": "Not Achieved",
+  "not-assessed": "Not Assessed"
+};
+
+const TREATMENT_LABEL: Record<RiskTreatmentDecision, string> = {
+  mitigate: "Mitigate",
+  accept: "Accept",
+  transfer: "Transfer",
+  avoid: "Avoid"
+};
 
 interface AnalysisPanelProps {
   project: OtProject;
@@ -40,6 +70,9 @@ interface AnalysisPanelProps {
   dockOpen: boolean;
   onToggleDock: () => void;
   onZoneTargetChange: (zone: ZoneId, target: number) => void;
+  onCafOverrideChange: (principle: CafPrincipleId, status: CafStatus | null) => void;
+  onRiskTreatmentChange: (assetId: string, patch: Partial<RiskTreatment>) => void;
+  onEditGovernance: () => void;
 }
 
 const DOCK_MIN = 7;
@@ -49,6 +82,7 @@ const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "reachability", label: "Reachability", Icon: Route },
   { id: "rating", label: "Security Rating", Icon: ShieldCheck },
   { id: "levels", label: "Security Levels", Icon: Layers },
+  { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
   { id: "findings", label: "Findings", Icon: AlertTriangle },
   { id: "attack", label: "ATT&CK Exposure", Icon: Crosshair },
   { id: "risk", label: "Risk", Icon: Flame },
@@ -57,7 +91,17 @@ const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "report", label: "Report", Icon: FileText }
 ];
 
-type TabId = "reachability" | "rating" | "levels" | "findings" | "attack" | "risk" | "flows" | "matrix" | "report";
+type TabId =
+  | "reachability"
+  | "rating"
+  | "levels"
+  | "compliance"
+  | "findings"
+  | "attack"
+  | "risk"
+  | "flows"
+  | "matrix"
+  | "report";
 
 function directionLabel(direction: string) {
   if (direction === "source-to-target") {
@@ -86,7 +130,10 @@ export function AnalysisPanel({
   onDockResize,
   dockOpen,
   onToggleDock,
-  onZoneTargetChange
+  onZoneTargetChange,
+  onCafOverrideChange,
+  onRiskTreatmentChange,
+  onEditGovernance
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("reachability");
   const [includeDocs, setIncludeDocs] = useState(false);
@@ -103,6 +150,8 @@ export function AnalysisPanel({
   const securityLevels = assessSecurityLevels(project, project.zoneTargets);
   const exposedTechniques = new Set(assessment.findings.flatMap((finding) => finding.techniques ?? []));
   const risk = assessRisk(project, assessment.findings);
+  const caf = assessCaf(project, assessment, securityLevels, risk);
+  const findingById = new Map(assessment.findings.map((finding) => [finding.id, finding]));
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
@@ -407,6 +456,103 @@ export function AnalysisPanel({
         </div>
       ) : null}
 
+      {activeTab === "compliance" ? (
+        <div className="analysis-content caf-view">
+          <div className="caf-head">
+            <div className="caf-posture">
+              <strong>{caf.postureScore}%</strong>
+              <span>CAF readiness · assessed outcomes</span>
+            </div>
+            <div className="caf-objective-summary">
+              {caf.objectives.map((objective) => {
+                const meta = cafObjectives.find((item) => item.id === objective.id);
+                return (
+                  <div className="caf-objective-pill" key={objective.id} title={meta?.title}>
+                    <strong>{objective.id}</strong>
+                    <span>
+                      {objective.achieved}A · {objective.partial}P · {objective.notAchieved}N
+                      {objective.notAssessed > 0 ? ` · ${objective.notAssessed}—` : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <button type="button" className="text-button compact" onClick={onEditGovernance}>
+              <Building2 size={14} aria-hidden="true" />
+              Engagement context
+            </button>
+          </div>
+
+          {cafObjectives.map((objective) => (
+            <div className="caf-objective-group" key={objective.id}>
+              <h3>
+                {objective.id} · {objective.title}
+              </h3>
+              <div className="caf-principles">
+                {cafPrinciplesForObjective(objective.id).map((principle) => {
+                  const result = caf.principles.find((item) => item.id === principle.id);
+                  if (!result) {
+                    return null;
+                  }
+                  return (
+                    <details className="caf-principle" key={principle.id}>
+                      <summary>
+                        <span className="caf-code">{principle.id}</span>
+                        <span className="caf-title">{principle.title}</span>
+                        <span className={`caf-status caf-status-${result.status}`}>{CAF_STATUS_LABEL[result.status]}</span>
+                      </summary>
+                      <div className="caf-principle-body">
+                        <p className="caf-rationale">{result.rationale}</p>
+                        {result.gap ? (
+                          <p className="caf-gap">
+                            <strong>Gap:</strong> {result.gap}
+                          </p>
+                        ) : null}
+                        <p className="caf-guidance">{principle.otGuidance}</p>
+                        {result.findingIds.length > 0 ? (
+                          <div className="caf-findings">
+                            {result.findingIds.map((findingId) => {
+                              const finding = findingById.get(findingId);
+                              return finding ? (
+                                <button
+                                  type="button"
+                                  key={findingId}
+                                  className="caf-finding-link"
+                                  onClick={() => onFindingSelect(finding)}
+                                >
+                                  {finding.title}
+                                </button>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : null}
+                        <label className="caf-override field">
+                          <span>Assessor status</span>
+                          <select
+                            value={result.overridden ? result.status : ""}
+                            onChange={(event) =>
+                              onCafOverrideChange(principle.id, (event.target.value || null) as CafStatus | null)
+                            }
+                          >
+                            <option value="">Use derived ({CAF_STATUS_LABEL[result.derivedStatus]})</option>
+                            {(Object.keys(CAF_STATUS_LABEL) as CafStatus[]).map((status) => (
+                              <option key={status} value={status}>
+                                {CAF_STATUS_LABEL[status]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <small className="caf-refs">{principle.references.join(" · ")}</small>
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {activeTab === "attack" ? (
         <div className="analysis-content attack-view">
           <div className="attack-matrix">
@@ -462,29 +608,90 @@ export function AnalysisPanel({
             <p className="muted risk-axes">Rows: consequence (top = severe) · Columns: likelihood (right = likely)</p>
           </div>
           <div className="risk-register">
-            <h3>Risk register</h3>
+            <h3>Risk register &amp; treatment</h3>
             <table className="risk-table">
               <thead>
                 <tr>
                   <th>Asset</th>
-                  <th>Consequence</th>
-                  <th>Likelihood</th>
+                  <th title="Consequence">C</th>
+                  <th title="Likelihood">L</th>
                   <th>Score</th>
                   <th>Band</th>
+                  <th>Treatment</th>
+                  <th>Owner</th>
+                  <th>Target</th>
+                  <th title="Residual score after treatment">Resid.</th>
                 </tr>
               </thead>
               <tbody>
-                {risk.assets.slice(0, 12).map((item) => (
-                  <tr key={item.assetId}>
-                    <th>{assetName(item.assetId)}</th>
-                    <td>{item.consequence}</td>
-                    <td>{item.likelihood}</td>
-                    <td>{item.score}</td>
-                    <td>
-                      <span className={`risk-band-chip risk-chip-${item.band}`}>{item.band}</span>
-                    </td>
-                  </tr>
-                ))}
+                {risk.assets.slice(0, 12).map((item) => {
+                  const treatment = project.riskTreatments?.[item.assetId];
+                  return (
+                    <tr key={item.assetId}>
+                      <th>{assetName(item.assetId)}</th>
+                      <td>{item.consequence}</td>
+                      <td>{item.likelihood}</td>
+                      <td>{item.score}</td>
+                      <td>
+                        <span className={`risk-band-chip risk-chip-${item.band}`}>{item.band}</span>
+                      </td>
+                      <td>
+                        <select
+                          className="treatment-select"
+                          aria-label={`Treatment for ${assetName(item.assetId)}`}
+                          value={treatment?.decision ?? ""}
+                          onChange={(event) => {
+                            if (event.target.value) {
+                              onRiskTreatmentChange(item.assetId, { decision: event.target.value as RiskTreatmentDecision });
+                            }
+                          }}
+                        >
+                          <option value="" disabled>
+                            Set…
+                          </option>
+                          {(Object.keys(TREATMENT_LABEL) as RiskTreatmentDecision[]).map((decision) => (
+                            <option key={decision} value={decision}>
+                              {TREATMENT_LABEL[decision]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          className="treatment-input"
+                          aria-label={`Risk owner for ${assetName(item.assetId)}`}
+                          value={treatment?.owner ?? ""}
+                          placeholder="Owner"
+                          onChange={(event) => onRiskTreatmentChange(item.assetId, { owner: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="treatment-input"
+                          type="date"
+                          aria-label={`Target date for ${assetName(item.assetId)}`}
+                          value={treatment?.targetDate ?? ""}
+                          onChange={(event) => onRiskTreatmentChange(item.assetId, { targetDate: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="treatment-input treatment-residual"
+                          type="number"
+                          min={1}
+                          max={25}
+                          aria-label={`Residual score for ${assetName(item.assetId)}`}
+                          value={treatment?.residual ?? ""}
+                          onChange={(event) =>
+                            onRiskTreatmentChange(item.assetId, {
+                              residual: event.target.value === "" ? undefined : Number(event.target.value)
+                            })
+                          }
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

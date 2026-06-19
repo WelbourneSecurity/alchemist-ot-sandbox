@@ -1,5 +1,9 @@
 import { getAssetType, getZone, standardReferences } from "../data/catalog";
-import type { OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
+import { cafPrinciple } from "../data/caf";
+import type { CafStatus, OtProject, ReachabilityResult, SecurityAssessment } from "../models/types";
+import { assessSecurityLevels } from "../engine/securityLevels";
+import { assessRisk } from "../engine/risk";
+import { assessCaf } from "../engine/caf";
 
 interface PrintableReportProps {
   project: OtProject;
@@ -7,8 +11,19 @@ interface PrintableReportProps {
   reachability: ReachabilityResult;
 }
 
+const CAF_STATUS_LABEL: Record<CafStatus, string> = {
+  achieved: "Achieved",
+  partial: "Partially",
+  "not-achieved": "Not Achieved",
+  "not-assessed": "Not Assessed"
+};
+
 export function PrintableReport({ project, assessment, reachability }: PrintableReportProps) {
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
+  const engagement = project.engagement;
+  const securityLevels = assessSecurityLevels(project, project.zoneTargets);
+  const risk = assessRisk(project, assessment.findings);
+  const caf = assessCaf(project, assessment, securityLevels, risk);
 
   return (
     <article className="print-document">
@@ -18,6 +33,44 @@ export function PrintableReport({ project, assessment, reachability }: Printable
         <strong>Advisory score: {assessment.overallScore}/100</strong>
         <span>Generated {new Date(project.updatedAt).toLocaleString()}</span>
       </header>
+
+      {engagement ? (
+        <section>
+          <h2>Governance &amp; Scope</h2>
+          <table>
+            <tbody>
+              <tr>
+                <th>Organisation</th>
+                <td>{engagement.organisation || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Sector</th>
+                <td>{engagement.sector || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Regulatory regime</th>
+                <td>{engagement.regime || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Assessor</th>
+                <td>{engagement.assessor || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Assessment date</th>
+                <td>{engagement.assessmentDate || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Scope</th>
+                <td>{engagement.scope || "Not recorded"}</td>
+              </tr>
+              <tr>
+                <th>Limitations</th>
+                <td>{engagement.limitations || "Not recorded"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       <section>
         <h2>Executive Summary</h2>
@@ -61,6 +114,71 @@ export function PrintableReport({ project, assessment, reachability }: Printable
                 <td>{category.summary}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>NCSC CAF Compliance</h2>
+        <p>
+          CAF readiness across assessed outcomes: <strong>{caf.postureScore}%</strong>. Governance and people outcomes are
+          marked Not Assessed and require assessor attestation. This is an advisory mapping, not a formal CAF return.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Outcome</th>
+              <th>Principle</th>
+              <th>Status</th>
+              <th>Gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {caf.principles.map((principle) => (
+              <tr key={principle.id}>
+                <td>{principle.id}</td>
+                <td>{cafPrinciple(principle.id).title}</td>
+                <td>{CAF_STATUS_LABEL[principle.status]}</td>
+                <td>{principle.gap || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Risk Register &amp; Treatment</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Cons.</th>
+              <th>Like.</th>
+              <th>Score</th>
+              <th>Band</th>
+              <th>Treatment</th>
+              <th>Owner</th>
+              <th>Target</th>
+              <th>Residual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {risk.assets.slice(0, 20).map((item) => {
+              const treatment = project.riskTreatments?.[item.assetId];
+              return (
+                <tr key={item.assetId}>
+                  <td>{assetName(item.assetId)}</td>
+                  <td>{item.consequence}</td>
+                  <td>{item.likelihood}</td>
+                  <td>{item.score}</td>
+                  <td>{item.band}</td>
+                  <td>{treatment?.decision ?? "—"}</td>
+                  <td>{treatment?.owner || "—"}</td>
+                  <td>{treatment?.targetDate || "—"}</td>
+                  <td>{treatment?.residual ?? "—"}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>

@@ -182,6 +182,56 @@ export interface ProjectAssumption {
   label: string;
 }
 
+// --- GRC: NCSC CAF compliance, governance context, and risk treatment ---
+
+export type CafObjectiveId = "A" | "B" | "C" | "D";
+
+export type CafPrincipleId =
+  | "A1"
+  | "A2"
+  | "A3"
+  | "A4"
+  | "B1"
+  | "B2"
+  | "B3"
+  | "B4"
+  | "B5"
+  | "B6"
+  | "C1"
+  | "C2"
+  | "D1"
+  | "D2";
+
+export type CafStatus = "achieved" | "partial" | "not-achieved" | "not-assessed";
+
+/** Consultant's authoritative status for a CAF principle — overrides the derived status. */
+export interface CafOverride {
+  status: CafStatus;
+  note?: string;
+}
+
+/** Engagement / governance context that frames a consultancy assessment and report. */
+export interface EngagementContext {
+  organisation: string;
+  sector: string;
+  regime: string;
+  assessor: string;
+  assessmentDate: string;
+  scope: string;
+  limitations: string;
+}
+
+export type RiskTreatmentDecision = "mitigate" | "accept" | "transfer" | "avoid";
+
+export interface RiskTreatment {
+  decision: RiskTreatmentDecision;
+  owner: string;
+  targetDate: string;
+  notes: string;
+  /** Residual risk score (1–25) after treatment, set by the assessor. */
+  residual?: number;
+}
+
 export interface OtProject {
   schemaVersion: number;
   id: string;
@@ -192,6 +242,9 @@ export interface OtProject {
   subnets?: Subnet[];
   assumptions: ProjectAssumption[];
   zoneTargets?: Partial<Record<ZoneId, number>>;
+  engagement?: EngagementContext;
+  cafOverrides?: Partial<Record<CafPrincipleId, CafOverride>>;
+  riskTreatments?: Record<string, RiskTreatment>;
 }
 
 export interface PathRisk {
