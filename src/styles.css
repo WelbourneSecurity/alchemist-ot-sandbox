@@ -429,6 +429,72 @@ body.light-mode .query-box select {
   opacity: 0.88;
 }
 
+/* Dropdown menu used to group header actions. */
+.menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu-trigger {
+  gap: 0.4rem;
+}
+
+.menu-open .menu-trigger {
+  border-color: var(--accent);
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  min-width: 12.5rem;
+  display: grid;
+  gap: 1px;
+  padding: 0.3rem;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.menu-panel-right {
+  right: 0;
+}
+
+.menu-panel-left {
+  left: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  outline: none;
+  background: var(--accent-soft);
+}
+
+.menu-item svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .danger-button {
   width: 100%;
   margin-top: 0.35rem;
@@ -2486,6 +2552,30 @@ body.light-mode .conduit-label {
   border-bottom-color: var(--accent);
 }
 
+.tab-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.tab-group + .tab-group {
+  margin-left: 0.3rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid var(--line);
+}
+
+.tab-group-label {
+  flex: 0 0 auto;
+  padding: 0 0.1rem;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
 .analysis-content {
   min-height: 0;
   padding: 0.85rem;
@@ -3341,6 +3431,14 @@ button.verdict-finding:hover {
   .text-button,
   .theme-toggle {
     width: 100%;
+  }
+
+  .menu {
+    width: 100%;
+  }
+
+  .menu-panel {
+    min-width: 100%;
   }
 
   .field-row,

@@ -80,19 +80,39 @@ interface AnalysisPanelProps {
 const DOCK_MIN = 7;
 const DOCK_MAX = 42;
 
-const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
-  { id: "reachability", label: "Reachability", Icon: Route },
-  { id: "attackpath", label: "Attack Path", Icon: Waypoints },
-  { id: "rating", label: "Security Rating", Icon: ShieldCheck },
-  { id: "levels", label: "Security Levels", Icon: Layers },
-  { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
-  { id: "findings", label: "Findings", Icon: AlertTriangle },
-  { id: "attack", label: "ATT&CK Exposure", Icon: Crosshair },
-  { id: "risk", label: "Risk", Icon: Flame },
-  { id: "flows", label: "Flow Table", Icon: ListFilter },
-  { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 },
-  { id: "report", label: "Report", Icon: FileText }
+const TAB_GROUPS: Array<{ label: string; tabs: Array<{ id: TabId; label: string; Icon: LucideIcon }> }> = [
+  {
+    label: "Posture",
+    tabs: [
+      { id: "rating", label: "Security Rating", Icon: ShieldCheck },
+      { id: "levels", label: "Security Levels", Icon: Layers },
+      { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
+      { id: "risk", label: "Risk", Icon: Flame },
+      { id: "findings", label: "Findings", Icon: AlertTriangle }
+    ]
+  },
+  {
+    label: "Threat",
+    tabs: [
+      { id: "attackpath", label: "Attack Path", Icon: Waypoints },
+      { id: "attack", label: "ATT&CK Exposure", Icon: Crosshair }
+    ]
+  },
+  {
+    label: "Network",
+    tabs: [
+      { id: "reachability", label: "Reachability", Icon: Route },
+      { id: "flows", label: "Flow Table", Icon: ListFilter },
+      { id: "matrix", label: "Zone Matrix", Icon: Grid2X2 }
+    ]
+  },
+  {
+    label: "Report",
+    tabs: [{ id: "report", label: "Report", Icon: FileText }]
+  }
 ];
+
+const TABS = TAB_GROUPS.flatMap((group) => group.tabs);
 
 type TabId =
   | "reachability"
@@ -139,7 +159,7 @@ export function AnalysisPanel({
   onRiskTreatmentChange,
   onEditGovernance
 }: AnalysisPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("reachability");
+  const [activeTab, setActiveTab] = useState<TabId>("rating");
   const [includeDocs, setIncludeDocs] = useState(false);
   const [severityOn, setSeverityOn] = useState<Record<Severity, boolean>>({
     critical: true,
@@ -241,27 +261,34 @@ export function AnalysisPanel({
           {dockOpen ? <ChevronDown size={15} aria-hidden="true" /> : <ChevronUp size={15} aria-hidden="true" />}
         </button>
         <div className="tabs" role="tablist" aria-label="Analysis views" onKeyDown={handleTabKeyDown}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            id={`analysis-tab-${tab.id}`}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls="analysis-tabpanel"
-            tabIndex={activeTab === tab.id ? 0 : -1}
-            className={activeTab === tab.id ? "active" : ""}
-            onClick={() => {
-              setActiveTab(tab.id);
-              if (!dockOpen) {
-                onToggleDock();
-              }
-            }}
-          >
-            <tab.Icon size={16} aria-hidden="true" />
-            {tab.label}
-          </button>
-        ))}
+          {TAB_GROUPS.map((group) => (
+            <div className="tab-group" key={group.label}>
+              <span className="tab-group-label" aria-hidden="true">
+                {group.label}
+              </span>
+              {group.tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  id={`analysis-tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls="analysis-tabpanel"
+                  tabIndex={activeTab === tab.id ? 0 : -1}
+                  className={activeTab === tab.id ? "active" : ""}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (!dockOpen) {
+                      onToggleDock();
+                    }
+                  }}
+                >
+                  <tab.Icon size={16} aria-hidden="true" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
