@@ -666,6 +666,38 @@ export const knowledgeBase: KbTopic[] = [
     references: ["NCSC Cyber Assessment Framework"]
   },
   {
+    id: "cheatsheet-crosswalk",
+    kind: "cheatsheet",
+    category: "Frameworks",
+    title: "Standards crosswalk (62443 / NIST / CAF)",
+    summary:
+      "How the seven IEC 62443 Foundational Requirements line up with NIST CSF 2.0 functions, NIST SP 800-82r3 / 800-53 control families and NCSC CAF principles. Approximate mappings for orientation, not an official equivalence.",
+    sections: [
+      {
+        heading: "NCSC CAF objectives across the frameworks",
+        points: [
+          "A Managing security risk: NIST CSF Govern & Identify; IEC 62443-2-1 (security programme) and 62443-3-2 (risk assessment).",
+          "B Protecting against cyber attack: NIST CSF Protect; IEC 62443-3-3 FR1 to FR5 and 62443-2-4 (service providers).",
+          "C Detecting cyber security events: NIST CSF Detect; IEC 62443-3-3 FR6 (timely response to events).",
+          "D Minimising the impact: NIST CSF Respond & Recover; IEC 62443-3-3 FR7 (resource availability)."
+        ]
+      }
+    ],
+    table: {
+      columns: ["IEC 62443 FR", "NIST CSF 2.0", "NIST SP 800-82 / 800-53", "NCSC CAF"],
+      rows: [
+        ["FR1 Identification & authentication", "Protect (PR.AA)", "IA, AC", "B2 Identity & access control"],
+        ["FR2 Use control", "Protect (PR.AA)", "AC", "B2 Identity & access control"],
+        ["FR3 System integrity", "Protect (PR.PS)", "SI, CM", "B4 System security"],
+        ["FR4 Data confidentiality", "Protect (PR.DS)", "SC", "B3 Data security"],
+        ["FR5 Restricted data flow", "Protect (PR.IR)", "SC-7 boundary protection", "B5 Resilient networks"],
+        ["FR6 Timely response to events", "Detect (DE.CM) / Respond (RS)", "AU, SI-4, IR", "C1 Security monitoring"],
+        ["FR7 Resource availability", "Recover (RC)", "CP", "B5 / D1 response & recovery"]
+      ]
+    },
+    references: ["ISA/IEC 62443-3-3", "NIST CSF 2.0", "NIST SP 800-82 Rev. 3", "NCSC Cyber Assessment Framework"]
+  },
+  {
     id: "resource-standards",
     kind: "resource",
     category: "Frameworks",
