@@ -17,6 +17,7 @@ export interface SavedProjectMeta {
 const INDEX_KEY = "alchemist-projects";
 const CURRENT_KEY = "alchemist-current-project";
 const PAYLOAD_PREFIX = "alchemist-project:";
+const BASELINE_PREFIX = "alchemist-baseline:";
 const LEGACY_KEY = "alchemist-ot-sandbox-project";
 
 function clone(project: OtProject): OtProject {
@@ -29,6 +30,10 @@ function newId(): string {
 
 function payloadKey(id: string): string {
   return `${PAYLOAD_PREFIX}${id}`;
+}
+
+function baselineKey(id: string): string {
+  return `${BASELINE_PREFIX}${id}`;
 }
 
 function readIndex(): SavedProjectMeta[] {
@@ -150,6 +155,7 @@ export function renameProject(id: string, name: string): void {
 
 export function deleteProject(id: string): void {
   window.localStorage.removeItem(payloadKey(id));
+  window.localStorage.removeItem(baselineKey(id));
   const index = readIndex().filter((meta) => meta.id !== id);
   writeIndex(index);
   if (window.localStorage.getItem(CURRENT_KEY) === id) {
@@ -159,4 +165,22 @@ export function deleteProject(id: string): void {
       window.localStorage.removeItem(CURRENT_KEY);
     }
   }
+}
+
+/** The remediation baseline snapshot for the current assessment, if one has been set. */
+export function getBaseline(): OtProject | null {
+  const raw = window.localStorage.getItem(baselineKey(ensureInitialised()));
+  if (!raw) {
+    return null;
+  }
+  const parsed = parseProjectJson(raw);
+  return parsed.ok ? parsed.project : null;
+}
+
+export function setBaseline(project: OtProject): void {
+  window.localStorage.setItem(baselineKey(ensureInitialised()), serializeProject(project));
+}
+
+export function clearBaseline(): void {
+  window.localStorage.removeItem(baselineKey(ensureInitialised()));
 }

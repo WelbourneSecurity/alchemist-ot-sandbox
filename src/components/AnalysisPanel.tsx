@@ -13,10 +13,11 @@ import {
   Route,
   Scale,
   ShieldCheck,
+  TrendingUp,
   Waypoints,
   type LucideIcon
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAssetType, getZone, zones } from "../data/catalog";
 import { cafObjectives, cafPrinciplesForObjective } from "../data/caf";
 import { protocolLabel, resolveProtocolFamily } from "../data/protocols";
@@ -38,6 +39,8 @@ import { assessCaf } from "../engine/caf";
 import { icsTactics, icsTechniques } from "../data/attackIcs";
 import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
 import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
+import { diffAssessments } from "../engine/baselineDiff";
+import { clearBaseline, getBaseline, setBaseline } from "../lib/projectStore";
 import { VerdictBanner } from "./VerdictBanner";
 
 const CAF_STATUS_LABEL: Record<CafStatus, string> = {
@@ -88,7 +91,8 @@ const TAB_GROUPS: Array<{ label: string; tabs: Array<{ id: TabId; label: string;
       { id: "levels", label: "Security Levels", Icon: Layers },
       { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
       { id: "risk", label: "Risk", Icon: Flame },
-      { id: "findings", label: "Findings", Icon: AlertTriangle }
+      { id: "findings", label: "Findings", Icon: AlertTriangle },
+      { id: "baseline", label: "Baseline", Icon: TrendingUp }
     ]
   },
   {
@@ -121,6 +125,7 @@ type TabId =
   | "levels"
   | "compliance"
   | "findings"
+  | "baseline"
   | "attack"
   | "risk"
   | "flows"
@@ -169,6 +174,12 @@ export function AnalysisPanel({
   });
   const [attackEntryOverride, setAttackEntryOverride] = useState<string | null>(null);
   const [attackTargetOverride, setAttackTargetOverride] = useState<string | null>(null);
+  const [baselineProject, setBaselineProject] = useState(() => getBaseline());
+
+  // Re-read the baseline when the active assessment changes (e.g. switching projects).
+  useEffect(() => {
+    setBaselineProject(getBaseline());
+  }, [project.id]);
   const visibleFindings = assessment.findings.filter(
     (finding) => (includeDocs || finding.category !== "documentation") && severityOn[finding.severity]
   );
@@ -183,6 +194,16 @@ export function AnalysisPanel({
   const attackEntryId = assetExists(attackEntryOverride) ? attackEntryOverride : suggestEntry(project);
   const attackTargetId = assetExists(attackTargetOverride) ? attackTargetOverride : suggestTarget(project, attackEntryId);
   const attackPath = analyzeAttackPath(project, attackEntryId, attackTargetId, assessment.findings);
+
+  const captureBaseline = () => {
+    setBaseline(project);
+    setBaselineProject(getBaseline());
+  };
+  const dropBaseline = () => {
+    clearBaseline();
+    setBaselineProject(null);
+  };
+  const baselineDiff = baselineProject && activeTab === "baseline" ? diffAssessments(baselineProject, project) : null;
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
   const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -451,6 +472,111 @@ export function AnalysisPanel({
               </>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {activeTab === "baseline" ? (
+        <div className="analysis-content baseline-view">
+          {baselineProject && baselineDiff ? (
+            <>
+              <div className="baseline-summary">
+                <div className="baseline-score">
+                  <span>Baseline</span>
+                  <strong>{baselineDiff.baselineScore}</strong>
+                </div>
+                <div className="baseline-score">
+                  <span>Current</span>
+                  <strong>{baselineDiff.currentScore}</strong>
+                </div>
+                <div className={`baseline-delta ${baselineDiff.scoreDelta >= 0 ? "is-up" : "is-down"}`}>
+                  <span>Change</span>
+                  <strong>{baselineDiff.scoreDelta >= 0 ? `+${baselineDiff.scoreDelta}` : baselineDiff.scoreDelta}</strong>
+                </div>
+                <div className="baseline-score">
+                  <span>High / critical risk</span>
+                  <strong>
+                    {baselineDiff.baselineHighRisk} to {baselineDiff.currentHighRisk}
+                  </strong>
+                </div>
+                <div className="baseline-summary-actions">
+                  <button type="button" className="text-button" onClick={captureBaseline} title="Snapshot the current model as the new baseline">
+                    Update baseline
+                  </button>
+                  <button type="button" className="text-button" onClick={dropBaseline}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div className="baseline-cols">
+                <div>
+                  <h3>Category change</h3>
+                  <div className="kb-table-wrap">
+                    <table className="kb-table">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Base</th>
+                          <th>Now</th>
+                          <th>Change</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {baselineDiff.categories.map((row) => (
+                          <tr key={row.category}>
+                            <td>{row.label}</td>
+                            <td>{row.baseline}</td>
+                            <td>{row.current}</td>
+                            <td className={row.delta > 0 ? "delta-up" : row.delta < 0 ? "delta-down" : ""}>
+                              {row.delta > 0 ? `+${row.delta}` : row.delta}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <h3>Fixed since baseline ({baselineDiff.fixed.length})</h3>
+                  {baselineDiff.fixed.length > 0 ? (
+                    <ul className="baseline-findings">
+                      {baselineDiff.fixed.map((finding) => (
+                        <li key={finding.id} className="is-fixed">
+                          <span>{finding.severity}</span>
+                          {finding.title}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No findings cleared yet.</p>
+                  )}
+                  <h3>Introduced ({baselineDiff.introduced.length})</h3>
+                  {baselineDiff.introduced.length > 0 ? (
+                    <ul className="baseline-findings">
+                      {baselineDiff.introduced.map((finding) => (
+                        <li key={finding.id} className="is-introduced">
+                          <span>{finding.severity}</span>
+                          {finding.title}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No new findings introduced.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="baseline-empty">
+              <p>
+                Snapshot the current model as a baseline, then remediate and watch the score, risk and findings
+                improve against it.
+              </p>
+              <button type="button" className="text-button primary" onClick={captureBaseline}>
+                Set baseline from current
+              </button>
+            </div>
+          )}
         </div>
       ) : null}
 
