@@ -2,15 +2,20 @@ import { useState } from "react";
 import {
   ArrowRight,
   BookOpen,
+  Check,
+  Copy,
   FilePlus2,
   Flame,
   Layers,
   LayoutGrid,
   Moon,
+  Pencil,
   Scale,
   ScrollText,
   Sun,
-  Waypoints
+  Trash2,
+  Waypoints,
+  X
 } from "lucide-react";
 import { VerdictBanner } from "./VerdictBanner";
 import { assessProject } from "../engine/scoring";
@@ -18,7 +23,16 @@ import { assessSecurityLevels } from "../engine/securityLevels";
 import { assessRisk } from "../engine/risk";
 import { assessCaf } from "../engine/caf";
 import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
-import { loadStoredProject, writeStoredProject } from "../lib/projectStorage";
+import { loadStoredProject } from "../lib/projectStorage";
+import {
+  createProject,
+  deleteProject,
+  duplicateProject,
+  getCurrentProjectId,
+  listProjects,
+  openProject,
+  renameProject
+} from "../lib/projectStore";
 import { blankProject } from "../data/sampleProject";
 import { scenarios } from "../data/scenarios";
 import type { OtProject } from "../models/types";
@@ -37,7 +51,11 @@ interface DashboardProps {
  * workbench. Loading a scenario writes it to storage; the workbench reads the same slot on entry.
  */
 export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
-  const [project] = useState<OtProject>(() => loadStoredProject());
+  const [project, setProject] = useState<OtProject>(() => loadStoredProject());
+  const [projects, setProjects] = useState(() => listProjects());
+  const [currentId, setCurrentId] = useState(() => getCurrentProjectId());
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
 
   const assessment = assessProject(project);
   const securityLevels = assessSecurityLevels(project, project.zoneTargets);
@@ -50,9 +68,45 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
   const slGaps = securityLevels.zones.filter((zone) => zone.achieved < zone.target).length;
   const highRisk = risk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
 
+  const refresh = () => {
+    setProjects(listProjects());
+    setProject(loadStoredProject());
+    setCurrentId(getCurrentProjectId());
+  };
+
   const load = (next: OtProject) => {
-    writeStoredProject(next);
+    createProject(next);
     onEnter();
+  };
+
+  const selectProject = (id: string) => {
+    openProject(id);
+    refresh();
+  };
+
+  const startRename = (id: string, name: string) => {
+    setRenamingId(id);
+    setDraftName(name);
+  };
+
+  const cancelRename = () => setRenamingId(null);
+
+  const commitRename = () => {
+    if (renamingId) {
+      renameProject(renamingId, draftName);
+    }
+    setRenamingId(null);
+    refresh();
+  };
+
+  const duplicate = (id: string) => {
+    duplicateProject(id);
+    refresh();
+  };
+
+  const remove = (id: string) => {
+    deleteProject(id);
+    refresh();
   };
 
   return (
@@ -148,6 +202,76 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
               : "no path to a crown jewel"}
           </small>
         </article>
+      </section>
+
+      <section className="dashboard-saved">
+        <h2>Saved assessments</h2>
+        <div className="saved-list">
+          {projects.map((meta) => (
+            <div className={`saved-row${meta.id === currentId ? " saved-current" : ""}`} key={meta.id}>
+              {renamingId === meta.id ? (
+                <input
+                  className="saved-rename"
+                  value={draftName}
+                  autoFocus
+                  onChange={(event) => setDraftName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      commitRename();
+                    } else if (event.key === "Escape") {
+                      cancelRename();
+                    }
+                  }}
+                  aria-label="Rename assessment"
+                />
+              ) : (
+                <button type="button" className="saved-select" onClick={() => selectProject(meta.id)} title="Make current">
+                  <span className="saved-name">{meta.name}</span>
+                  <small>
+                    {meta.id === currentId ? "Current · " : ""}updated {new Date(meta.updatedAt).toLocaleDateString()}
+                  </small>
+                </button>
+              )}
+              <div className="saved-actions">
+                {renamingId === meta.id ? (
+                  <>
+                    <button type="button" className="icon-button" onClick={commitRename} title="Save name" aria-label="Save name">
+                      <Check size={15} />
+                    </button>
+                    <button type="button" className="icon-button" onClick={cancelRename} title="Cancel" aria-label="Cancel rename">
+                      <X size={15} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      onClick={() => startRename(meta.id, meta.name)}
+                      title="Rename"
+                      aria-label="Rename"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button type="button" className="icon-button" onClick={() => duplicate(meta.id)} title="Duplicate" aria-label="Duplicate">
+                      <Copy size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      onClick={() => remove(meta.id)}
+                      disabled={projects.length <= 1}
+                      title="Delete"
+                      aria-label="Delete"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="dashboard-scenarios">

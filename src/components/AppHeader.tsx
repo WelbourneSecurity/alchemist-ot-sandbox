@@ -1,6 +1,7 @@
-import { BookOpen, Download, Files, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Share2, Sun, Upload, Undo2 } from "lucide-react";
+import { BookOpen, Download, Files, FolderOpen, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Share2, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
+import type { SavedProjectMeta } from "../lib/projectStore";
 import { Menu } from "./Menu";
 import { ScoreGauge } from "./ScoreGauge";
 
@@ -12,6 +13,9 @@ interface AppHeaderProps {
   canRedo: boolean;
   onProjectNameChange: (name: string) => void;
   onGoHome: () => void;
+  savedProjects: SavedProjectMeta[];
+  currentProjectId: string;
+  onSwitchProject: (id: string) => void;
   onImport: (file: File) => void;
   onImportScan: () => void;
   onExportJson: () => void;
@@ -48,6 +52,9 @@ export function AppHeader({
   canRedo,
   onProjectNameChange,
   onGoHome,
+  savedProjects,
+  currentProjectId,
+  onSwitchProject,
   onImport,
   onImportScan,
   onExportJson,
@@ -94,6 +101,20 @@ export function AppHeader({
           <span>Project</span>
           <input value={project.name} onChange={(event) => onProjectNameChange(event.target.value)} />
         </label>
+
+        {savedProjects.length > 1 ? (
+          <Menu
+            label="Switch"
+            align="left"
+            icon={<FolderOpen size={15} />}
+            title="Switch saved assessment"
+            items={savedProjects.map((meta) => ({
+              label: meta.name,
+              onSelect: () => onSwitchProject(meta.id),
+              disabled: meta.id === currentProjectId
+            }))}
+          />
+        ) : null}
 
         <div className="header-score" title={`Advisory security rating ${score} / 100`}>
           <ScoreGauge score={score} band={scoreBand(score)} size={40} thickness={9} />

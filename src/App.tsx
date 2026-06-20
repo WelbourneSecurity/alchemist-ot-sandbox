@@ -15,6 +15,7 @@ import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
 import { loadStoredProject, writeStoredProject } from "./lib/projectStorage";
+import { getCurrentProjectId, listProjects, openProject } from "./lib/projectStore";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
 import type {
   Asset,
@@ -88,6 +89,8 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
   const [governanceOpen, setGovernanceOpen] = useState(false);
   const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const [savedProjects, setSavedProjects] = useState(() => listProjects());
+  const [currentProjectId, setCurrentProjectId] = useState(() => getCurrentProjectId());
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
   const [fitSignal, setFitSignal] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -431,6 +434,18 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
     [commitProject, pushToast]
   );
 
+  const handleSwitchProject = useCallback(
+    (id: string) => {
+      openProject(id);
+      commitProject(loadStoredProject(), false);
+      setSelectedId(null);
+      setSavedProjects(listProjects());
+      setCurrentProjectId(getCurrentProjectId());
+      pushToast("Switched assessment", "info");
+    },
+    [commitProject, pushToast]
+  );
+
   // Load a shared model from a #share= link on first mount (overrides the stored project).
   useEffect(() => {
     const payload = sharePayloadFromHash(window.location.hash);
@@ -661,6 +676,9 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
           canUndo={history.length > 0}
           canRedo={future.length > 0}
           onProjectNameChange={(name) => commitProject((current) => ({ ...current, name }))}
+          savedProjects={savedProjects}
+          currentProjectId={currentProjectId}
+          onSwitchProject={handleSwitchProject}
           onImport={importProject}
           onImportScan={() => setImportWizardOpen(true)}
           onExportJson={handleExportJson}
