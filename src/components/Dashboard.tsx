@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
   Check,
   Compass,
@@ -129,15 +130,21 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
             <span>OT security workbench</span>
           </div>
         </div>
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={onToggleTheme}
-          aria-label="Toggle light and dark mode"
-          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        >
-          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
-        </button>
+        <div className="dashboard-top-actions">
+          <a className="dashboard-mainlink" href="https://welbournesecurity.com" title="Back to the main Welbourne Security site">
+            <ArrowUpRight size={15} aria-hidden="true" />
+            welbournesecurity.com
+          </a>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={onToggleTheme}
+            aria-label="Toggle light and dark mode"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+        </div>
       </header>
 
       <section className="dashboard-hero">
