@@ -775,6 +775,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
             onCafOverrideChange={setCafOverride}
             onRiskTreatmentChange={setRiskTreatment}
             onEditGovernance={() => setGovernanceOpen(true)}
+            onApplyProject={(next) => commitProject(next)}
           />
         </section>
       </main>

@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Building2,
+  Check,
   ChevronDown,
   ChevronUp,
   Crosshair,
@@ -13,6 +14,7 @@ import {
   Route,
   Scale,
   ShieldCheck,
+  SlidersHorizontal,
   TrendingUp,
   Waypoints,
   type LucideIcon
@@ -40,6 +42,8 @@ import { icsTactics, icsTechniques } from "../data/attackIcs";
 import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
 import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
 import { diffAssessments } from "../engine/baselineDiff";
+import { assessProject } from "../engine/scoring";
+import { applyRemediations, remediations } from "../engine/remediations";
 import { clearBaseline, getBaseline, setBaseline } from "../lib/projectStore";
 import { VerdictBanner } from "./VerdictBanner";
 
@@ -78,6 +82,7 @@ interface AnalysisPanelProps {
   onCafOverrideChange: (principle: CafPrincipleId, status: CafStatus | null) => void;
   onRiskTreatmentChange: (assetId: string, patch: Partial<RiskTreatment>) => void;
   onEditGovernance: () => void;
+  onApplyProject: (project: OtProject) => void;
 }
 
 const DOCK_MIN = 7;
@@ -91,8 +96,14 @@ const TAB_GROUPS: Array<{ label: string; tabs: Array<{ id: TabId; label: string;
       { id: "levels", label: "Security Levels", Icon: Layers },
       { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
       { id: "risk", label: "Risk", Icon: Flame },
-      { id: "findings", label: "Findings", Icon: AlertTriangle },
-      { id: "baseline", label: "Baseline", Icon: TrendingUp }
+      { id: "findings", label: "Findings", Icon: AlertTriangle }
+    ]
+  },
+  {
+    label: "Improve",
+    tabs: [
+      { id: "baseline", label: "Baseline", Icon: TrendingUp },
+      { id: "whatif", label: "What-if", Icon: SlidersHorizontal }
     ]
   },
   {
@@ -126,6 +137,7 @@ type TabId =
   | "compliance"
   | "findings"
   | "baseline"
+  | "whatif"
   | "attack"
   | "risk"
   | "flows"
@@ -162,7 +174,8 @@ export function AnalysisPanel({
   onZoneTargetChange,
   onCafOverrideChange,
   onRiskTreatmentChange,
-  onEditGovernance
+  onEditGovernance,
+  onApplyProject
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("rating");
   const [includeDocs, setIncludeDocs] = useState(false);
@@ -175,6 +188,7 @@ export function AnalysisPanel({
   const [attackEntryOverride, setAttackEntryOverride] = useState<string | null>(null);
   const [attackTargetOverride, setAttackTargetOverride] = useState<string | null>(null);
   const [baselineProject, setBaselineProject] = useState(() => getBaseline());
+  const [activeRemediations, setActiveRemediations] = useState<Set<string>>(() => new Set());
 
   // Re-read the baseline when the active assessment changes (e.g. switching projects).
   useEffect(() => {
@@ -204,6 +218,24 @@ export function AnalysisPanel({
     setBaselineProject(null);
   };
   const baselineDiff = baselineProject && activeTab === "baseline" ? diffAssessments(baselineProject, project) : null;
+
+  const simulated = activeTab === "whatif" ? applyRemediations(project, activeRemediations) : project;
+  const simAssessment = activeTab === "whatif" ? assessProject(simulated) : assessment;
+  const simRisk = activeTab === "whatif" ? assessRisk(simulated, simAssessment.findings) : risk;
+  const currentHighRisk = risk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+  const simHighRisk = simRisk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+  const simScoreDelta = simAssessment.overallScore - assessment.overallScore;
+  const toggleRemediation = (id: string) => {
+    setActiveRemediations((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
   const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -577,6 +609,74 @@ export function AnalysisPanel({
               </button>
             </div>
           )}
+        </div>
+      ) : null}
+
+      {activeTab === "whatif" ? (
+        <div className="analysis-content whatif-view">
+          <div className="baseline-summary">
+            <div className="baseline-score">
+              <span>Now</span>
+              <strong>{assessment.overallScore}</strong>
+            </div>
+            <div className="baseline-score">
+              <span>Simulated</span>
+              <strong>{simAssessment.overallScore}</strong>
+            </div>
+            <div className={`baseline-delta ${simScoreDelta >= 0 ? "is-up" : "is-down"}`}>
+              <span>Change</span>
+              <strong>{simScoreDelta >= 0 ? `+${simScoreDelta}` : simScoreDelta}</strong>
+            </div>
+            <div className="baseline-score">
+              <span>High / critical risk</span>
+              <strong>
+                {currentHighRisk} to {simHighRisk}
+              </strong>
+            </div>
+            <div className="baseline-summary-actions">
+              <button
+                type="button"
+                className="text-button primary"
+                disabled={activeRemediations.size === 0}
+                onClick={() => {
+                  onApplyProject(simulated);
+                  setActiveRemediations(new Set());
+                }}
+                title="Commit the simulated remediations to the model"
+              >
+                Apply to model
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={activeRemediations.size === 0}
+                onClick={() => setActiveRemediations(new Set())}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          <ul className="whatif-list">
+            {remediations.map((remediation) => {
+              const on = activeRemediations.has(remediation.id);
+              return (
+                <li key={remediation.id}>
+                  <button
+                    type="button"
+                    className={`whatif-toggle${on ? " on" : ""}`}
+                    aria-pressed={on}
+                    onClick={() => toggleRemediation(remediation.id)}
+                  >
+                    <span className="whatif-check">{on ? <Check size={14} aria-hidden="true" /> : null}</span>
+                    <span className="whatif-text">
+                      <strong>{remediation.label}</strong>
+                      <small>{remediation.description}</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       ) : null}
 
