@@ -70,7 +70,7 @@ export function AppHeader({
         className="brand-block"
         onClick={onGoHome}
         title="Back to the dashboard"
-        aria-label="Alchemist — back to the dashboard"
+        aria-label="Alchemist, back to the dashboard"
       >
         <div className="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" focusable="false">
