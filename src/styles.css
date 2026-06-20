@@ -2595,6 +2595,35 @@ body.light-mode .conduit-label {
   line-height: 1.5;
 }
 
+/* Attack-path kill chain: ATT&CK for ICS tactics as bordered rows (mirrors .path-risks li). */
+.killchain {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.killchain li {
+  display: grid;
+  gap: 0.16rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+}
+
+.killchain li strong {
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.killchain li span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .rating-stack {
   display: grid;
   gap: 1rem;

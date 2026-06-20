@@ -13,6 +13,7 @@ import {
   Route,
   Scale,
   ShieldCheck,
+  Waypoints,
   type LucideIcon
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -36,6 +37,7 @@ import { assessSecurityLevels, foundationalRequirements } from "../engine/securi
 import { assessCaf } from "../engine/caf";
 import { icsTactics, icsTechniques } from "../data/attackIcs";
 import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
+import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
 import { VerdictBanner } from "./VerdictBanner";
 
 const CAF_STATUS_LABEL: Record<CafStatus, string> = {
@@ -80,6 +82,7 @@ const DOCK_MAX = 42;
 
 const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
   { id: "reachability", label: "Reachability", Icon: Route },
+  { id: "attackpath", label: "Attack Path", Icon: Waypoints },
   { id: "rating", label: "Security Rating", Icon: ShieldCheck },
   { id: "levels", label: "Security Levels", Icon: Layers },
   { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
@@ -93,6 +96,7 @@ const TABS: Array<{ id: TabId; label: string; Icon: LucideIcon }> = [
 
 type TabId =
   | "reachability"
+  | "attackpath"
   | "rating"
   | "levels"
   | "compliance"
@@ -143,6 +147,8 @@ export function AnalysisPanel({
     medium: true,
     low: true
   });
+  const [attackEntryOverride, setAttackEntryOverride] = useState<string | null>(null);
+  const [attackTargetOverride, setAttackTargetOverride] = useState<string | null>(null);
   const visibleFindings = assessment.findings.filter(
     (finding) => (includeDocs || finding.category !== "documentation") && severityOn[finding.severity]
   );
@@ -153,6 +159,10 @@ export function AnalysisPanel({
   const caf = assessCaf(project, assessment, securityLevels, risk);
   const findingById = new Map(assessment.findings.map((finding) => [finding.id, finding]));
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
+  const assetExists = (id: string | null): id is string => Boolean(id) && project.assets.some((asset) => asset.id === id);
+  const attackEntryId = assetExists(attackEntryOverride) ? attackEntryOverride : suggestEntry(project);
+  const attackTargetId = assetExists(attackTargetOverride) ? attackTargetOverride : suggestTarget(project, attackEntryId);
+  const attackPath = analyzeAttackPath(project, attackEntryId, attackTargetId, assessment.findings);
   const resizeState = useRef<{ startY: number; startHeight: number } | null>(null);
 
   const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -321,6 +331,98 @@ export function AnalysisPanel({
             ) : (
               <p className="muted">No path-specific risks detected for this query.</p>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === "attackpath" ? (
+        <div className="analysis-content reachability-grid">
+          <div className="query-box">
+            <label>
+              <span>Entry point</span>
+              <select value={attackEntryId} onChange={(event) => setAttackEntryOverride(event.target.value)}>
+                {project.assets.map((asset) => (
+                  <option value={asset.id} key={asset.id}>
+                    {asset.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Crown jewel</span>
+              <select value={attackTargetId} onChange={(event) => setAttackTargetOverride(event.target.value)}>
+                {project.assets.map((asset) => (
+                  <option value={asset.id} key={asset.id}>
+                    {asset.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className={`reachability-result ${attackPath.reachable ? "reachable" : "blocked"}`}>
+              <strong>{attackPath.reachable ? "Path found" : "No path"}</strong>
+              <p>{attackPath.explanation}</p>
+            </div>
+            <small className="mode-note">
+              Consequence {attackPath.consequence.value}/{RISK_SCALE}
+              {attackPath.consequence.processTag ? ` · ${attackPath.consequence.processTag}` : ""}
+            </small>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                onSourceChange(attackEntryId);
+                onTargetChange(attackTargetId);
+                onCanvasModeChange("reachability");
+              }}
+            >
+              Show on canvas
+            </button>
+          </div>
+
+          <div className="path-box">
+            <h3>Kill chain</h3>
+            {attackPath.reachable ? (
+              <>
+                <ol className="path-list">
+                  {attackPath.hops.map((hop) => (
+                    <li key={hop.assetId} title={`${hop.typeLabel} · ${hop.zoneLabel}`}>
+                      {hop.name}
+                    </li>
+                  ))}
+                </ol>
+                <ul className="killchain">
+                  {attackPath.tactics.map((tactic) => (
+                    <li key={tactic.id}>
+                      <strong>{tactic.name}</strong>
+                      <span>{tactic.techniques.map((technique) => `${technique.id} ${technique.name}`).join(", ")}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="muted">{attackPath.explanation}</p>
+            )}
+          </div>
+
+          <div className="path-risks">
+            <h3>Break the chain</h3>
+            {attackPath.breakers.length > 0 ? (
+              <ul>
+                {attackPath.breakers.map((breaker, index) => (
+                  <li key={index}>
+                    <span>{breaker}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">No path-specific controls to add; the route is already constrained.</p>
+            )}
+            {attackPath.protectedAssets.length > 0 ? (
+              <>
+                <h3>Protected (defence in depth)</h3>
+                <p className="muted">Unreachable from the entry: {attackPath.protectedAssets.join(", ")}.</p>
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}
