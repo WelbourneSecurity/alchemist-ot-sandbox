@@ -237,14 +237,14 @@ h3 {
 
 .project-controls {
   --header-control-height: 2.45rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.4rem;
+  display: flex;
   gap: 0.65rem;
   align-items: end;
   min-width: 0;
 }
 
 .project-name-field {
+  flex: 1;
   display: grid;
   gap: 0.35rem;
   min-width: 0;
@@ -4283,10 +4283,78 @@ button.verdict-finding:hover {
   font-size: 1rem;
 }
 
-.dashboard-scenarios h2 {
+.dashboard-scenarios h2,
+.dashboard-saved h2 {
   margin: 0 0 0.8rem;
   font-family: var(--font-display);
   font-size: 1.1rem;
+}
+
+.saved-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.saved-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  padding: 0.5rem 0.6rem 0.5rem 0.75rem;
+}
+
+.saved-current {
+  border-left-color: var(--accent);
+}
+
+.saved-select {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.1rem 0;
+}
+
+.saved-name {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-select small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.saved-rename {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.saved-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.saved-actions .icon-button {
+  width: 2.1rem;
+  min-height: 2.1rem;
 }
 
 .dashboard-scenario-grid {
