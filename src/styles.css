@@ -176,8 +176,10 @@ h3 {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
   width: 2.75rem;
   height: 2.75rem;
   flex: 0 0 auto;
@@ -4146,6 +4148,8 @@ button.verdict-finding:hover {
 
 .dashboard-top {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
   justify-content: space-between;
   align-items: center;
 }
@@ -4168,6 +4172,34 @@ button.verdict-finding:hover {
   display: block;
   color: var(--muted);
   font-size: 0.74rem;
+}
+
+.dashboard-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.dashboard-mainlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.dashboard-mainlink:hover,
+.dashboard-mainlink:focus-visible {
+  outline: none;
+  color: var(--text);
+  border-bottom-color: var(--line-strong);
+}
+
+.dashboard-mainlink svg {
+  color: var(--muted);
 }
 
 .dashboard-hero {
