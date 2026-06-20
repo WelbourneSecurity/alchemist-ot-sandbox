@@ -4,6 +4,7 @@ import type { CafStatus, OtProject, ReachabilityResult, SecurityAssessment } fro
 import { assessSecurityLevels } from "../engine/securityLevels";
 import { assessRisk } from "../engine/risk";
 import { assessCaf } from "../engine/caf";
+import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
 
 interface PrintableReportProps {
   project: OtProject;
@@ -24,6 +25,10 @@ export function PrintableReport({ project, assessment, reachability }: Printable
   const securityLevels = assessSecurityLevels(project, project.zoneTargets);
   const risk = assessRisk(project, assessment.findings);
   const caf = assessCaf(project, assessment, securityLevels, risk);
+  const attackEntry = suggestEntry(project);
+  const attackTarget = suggestTarget(project, attackEntry);
+  const attackPath = analyzeAttackPath(project, attackEntry, attackTarget, assessment.findings);
+  const limitingFr = (frIds: string[]) => (frIds.length > 0 ? frIds.join(", ") : "None");
 
   return (
     <article className="print-document">
@@ -97,6 +102,49 @@ export function PrintableReport({ project, assessment, reachability }: Printable
       </section>
 
       <section>
+        <h2>Attack Path</h2>
+        <p>
+          {assetName(attackPath.entryId)} to {assetName(attackPath.targetId)}:{" "}
+          <strong>{attackPath.reachable ? "path found" : "no path"}</strong>. Consequence {attackPath.consequence.value}/5.
+        </p>
+        <p>{attackPath.explanation}</p>
+        {attackPath.reachable ? <p>Chain: {attackPath.hops.map((hop) => hop.name).join(" -> ")}</p> : null}
+        {attackPath.tactics.length > 0 ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Tactic</th>
+                <th>ATT&amp;CK for ICS techniques</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attackPath.tactics.map((tactic) => (
+                <tr key={tactic.id}>
+                  <td>{tactic.name}</td>
+                  <td>{tactic.techniques.map((technique) => `${technique.id} ${technique.name}`).join(", ")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+        {attackPath.breakers.length > 0 ? (
+          <>
+            <p>
+              <strong>Controls that break the chain</strong>
+            </p>
+            <ul>
+              {attackPath.breakers.map((breaker, index) => (
+                <li key={index}>{breaker}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {attackPath.protectedAssets.length > 0 ? (
+          <p>Protected (unreachable from the entry): {attackPath.protectedAssets.join(", ")}.</p>
+        ) : null}
+      </section>
+
+      <section>
         <h2>Rating Breakdown</h2>
         <table>
           <thead>
@@ -112,6 +160,33 @@ export function PrintableReport({ project, assessment, reachability }: Printable
                 <td>{category.label}</td>
                 <td>{category.score}</td>
                 <td>{category.summary}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>IEC 62443 Security Levels</h2>
+        <p>Target (SL-T) vs achieved (SL-A) per zone. SL-A is capped by the weakest Foundational Requirement.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>SL-T</th>
+              <th>SL-A</th>
+              <th>Gap</th>
+              <th>Limiting FR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {securityLevels.zones.map((zoneSL) => (
+              <tr key={zoneSL.zone}>
+                <td>{getZone(zoneSL.zone).levelLabel}</td>
+                <td>{zoneSL.target}</td>
+                <td>{zoneSL.achieved}</td>
+                <td>{Math.max(0, zoneSL.target - zoneSL.achieved)}</td>
+                <td>{limitingFr(zoneSL.limiting)}</td>
               </tr>
             ))}
           </tbody>
