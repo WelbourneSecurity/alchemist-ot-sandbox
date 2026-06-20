@@ -22,7 +22,7 @@ import {
 import { VerdictBanner } from "./VerdictBanner";
 import { assessProject } from "../engine/scoring";
 import { assessSecurityLevels } from "../engine/securityLevels";
-import { assessRisk } from "../engine/risk";
+import { assessRisk, countHighRisk } from "../engine/risk";
 import { assessCaf } from "../engine/caf";
 import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
 import { loadStoredProject } from "../lib/projectStorage";
@@ -68,7 +68,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
 
   const assetName = (id: string) => project.assets.find((asset) => asset.id === id)?.name ?? id;
   const slGaps = securityLevels.zones.filter((zone) => zone.achieved < zone.target).length;
-  const highRisk = risk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+  const highRisk = countHighRisk(risk);
 
   const refresh = () => {
     setProjects(listProjects());
@@ -115,16 +115,6 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
     <div className="dashboard">
       <header className="dashboard-top">
         <div className="dashboard-brand">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 48 48" focusable="false">
-              <circle cx="24" cy="24" r="18" className="brand-mark-ring" />
-              <circle cx="24" cy="24" r="11" className="brand-mark-ring" />
-              <path d="M24 6 V42" className="brand-mark-grid" />
-              <path d="M6 24 H42" className="brand-mark-grid" />
-              <circle cx="24" cy="24" r="3.2" className="brand-mark-core" />
-              <path d="M24 6 A18 18 0 0 1 42 24" className="brand-mark-sweep" />
-            </svg>
-          </span>
           <div>
             <strong>Alchemist</strong>
             <span>OT security workbench</span>

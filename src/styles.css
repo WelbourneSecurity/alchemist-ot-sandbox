@@ -497,6 +497,13 @@ body.light-mode .query-box select {
   cursor: not-allowed;
 }
 
+.menu-item[aria-current="true"] {
+  opacity: 1;
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+  cursor: default;
+}
+
 .danger-button {
   width: 100%;
   margin-top: 0.35rem;

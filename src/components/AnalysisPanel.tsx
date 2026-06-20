@@ -39,7 +39,7 @@ import type {
 import { assessSecurityLevels, foundationalRequirements } from "../engine/securityLevels";
 import { assessCaf } from "../engine/caf";
 import { icsTactics, icsTechniques } from "../data/attackIcs";
-import { RISK_SCALE, assessRisk, riskBand } from "../engine/risk";
+import { RISK_SCALE, assessRisk, countHighRisk, riskBand } from "../engine/risk";
 import { analyzeAttackPath, suggestEntry, suggestTarget } from "../engine/attackPath";
 import { diffAssessments } from "../engine/baselineDiff";
 import { assessProject } from "../engine/scoring";
@@ -222,8 +222,8 @@ export function AnalysisPanel({
   const simulated = activeTab === "whatif" ? applyRemediations(project, activeRemediations) : project;
   const simAssessment = activeTab === "whatif" ? assessProject(simulated) : assessment;
   const simRisk = activeTab === "whatif" ? assessRisk(simulated, simAssessment.findings) : risk;
-  const currentHighRisk = risk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
-  const simHighRisk = simRisk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+  const currentHighRisk = countHighRisk(risk);
+  const simHighRisk = countHighRisk(simRisk);
   const simScoreDelta = simAssessment.overallScore - assessment.overallScore;
   const toggleRemediation = (id: string) => {
     setActiveRemediations((prev) => {

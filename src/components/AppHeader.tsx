@@ -2,6 +2,7 @@ import { BookOpen, Download, Files, FolderOpen, ImageDown, LayoutGrid, Moon, Pri
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
 import type { SavedProjectMeta } from "../lib/projectStore";
+import { BrandMark } from "./BrandMark";
 import { Menu } from "./Menu";
 import { ScoreGauge } from "./ScoreGauge";
 
@@ -80,16 +81,7 @@ export function AppHeader({
         title="Back to the dashboard"
         aria-label="Alchemist, back to the dashboard"
       >
-        <div className="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 48 48" focusable="false">
-            <circle cx="24" cy="24" r="18" className="brand-mark-ring" />
-            <circle cx="24" cy="24" r="11" className="brand-mark-ring" />
-            <path d="M24 6 V42" className="brand-mark-grid" />
-            <path d="M6 24 H42" className="brand-mark-grid" />
-            <circle cx="24" cy="24" r="3.2" className="brand-mark-core" />
-            <path d="M24 6 A18 18 0 0 1 42 24" className="brand-mark-sweep" />
-          </svg>
-        </div>
+        <BrandMark />
         <div>
           <h1>Welbourne Security</h1>
           <p>Alchemist OT Sandbox</p>
@@ -111,7 +103,8 @@ export function AppHeader({
             items={savedProjects.map((meta) => ({
               label: meta.name,
               onSelect: () => onSwitchProject(meta.id),
-              disabled: meta.id === currentProjectId
+              disabled: meta.id === currentProjectId,
+              current: meta.id === currentProjectId
             }))}
           />
         ) : null}

@@ -1,5 +1,5 @@
 import { assessProject } from "./scoring";
-import { assessRisk } from "./risk";
+import { assessRisk, countHighRisk } from "./risk";
 import type { Finding, OtProject, ScoreCategory } from "../models/types";
 
 /**
@@ -28,7 +28,7 @@ export interface BaselineDiff {
 }
 
 function highRiskCount(project: OtProject, findings: Finding[]): number {
-  return assessRisk(project, findings).assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+  return countHighRisk(assessRisk(project, findings));
 }
 
 export function diffAssessments(baseline: OtProject, current: OtProject): BaselineDiff {

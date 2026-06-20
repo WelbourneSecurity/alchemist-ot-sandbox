@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { X } from "lucide-react";
 
 interface TourStep {
@@ -72,12 +72,14 @@ function cardStyle(box: Box | null): CSSProperties {
 export function Tour({ open, onClose }: TourProps) {
   const [step, setStep] = useState(0);
   const [box, setBox] = useState<Box | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const current = STEPS[step];
 
   useEffect(() => {
     if (open) {
       setStep(0);
+      cardRef.current?.focus();
     }
   }, [open]);
 
@@ -128,13 +130,11 @@ export function Tour({ open, onClose }: TourProps) {
   }
 
   function next() {
-    setStep((value) => {
-      if (value >= STEPS.length - 1) {
-        finish();
-        return value;
-      }
-      return value + 1;
-    });
+    if (step >= STEPS.length - 1) {
+      finish();
+    } else {
+      setStep(step + 1);
+    }
   }
 
   return (
@@ -151,7 +151,7 @@ export function Tour({ open, onClose }: TourProps) {
         <div className="tour-dim tour-dim-full" />
       )}
 
-      <div className={`tour-card${box ? "" : " tour-card-center"}`} style={cardStyle(box)}>
+      <div className={`tour-card${box ? "" : " tour-card-center"}`} style={cardStyle(box)} ref={cardRef} tabIndex={-1}>
         <div className="tour-card-head">
           <strong>{current.title}</strong>
           <button type="button" className="rail-collapse" onClick={finish} aria-label="Close tour">

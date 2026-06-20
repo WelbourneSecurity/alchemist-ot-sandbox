@@ -107,3 +107,8 @@ export function assessRisk(project: OtProject, findings: Finding[]): RiskAssessm
 
   return { assets, matrix };
 }
+
+/** How many assets sit in the high or critical risk bands. */
+export function countHighRisk(risk: RiskAssessment): number {
+  return risk.assets.filter((asset) => asset.band === "critical" || asset.band === "high").length;
+}
