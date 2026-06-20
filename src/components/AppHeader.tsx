@@ -1,6 +1,7 @@
-import { BookOpen, Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Share2, Sun, Upload, Undo2 } from "lucide-react";
+import { BookOpen, Download, Files, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Share2, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
+import { Menu } from "./Menu";
 import { ScoreGauge } from "./ScoreGauge";
 
 interface AppHeaderProps {
@@ -106,10 +107,6 @@ export function AppHeader({
         <button type="button" className="icon-button" title="Redo" onClick={onRedo} disabled={!canRedo}>
           <Redo2 size={18} />
         </button>
-        <button type="button" className="text-button" onClick={onNewBlank}>
-          <RotateCcw size={16} />
-          Blank
-        </button>
         <button type="button" className="text-button" onClick={onBrowseScenarios} title="Browse sector scenarios">
           <LayoutGrid size={16} />
           Scenarios
@@ -122,26 +119,19 @@ export function AppHeader({
           <ScrollText size={16} />
           Method
         </button>
-        <button type="button" className="text-button" onClick={() => inputRef.current?.click()}>
-          <Upload size={16} />
-          Import
-        </button>
-        <button type="button" className="text-button" onClick={onImportScan} title="Import an Nmap, Zeek, GraphML or CSV scan">
-          <Radar size={16} />
-          Scan
-        </button>
-        <button type="button" className="text-button" onClick={onExportJson}>
-          <Download size={16} />
-          JSON
-        </button>
-        <button type="button" className="text-button" onClick={onExportSvg}>
-          <ImageDown size={16} />
-          SVG
-        </button>
-        <button type="button" className="text-button" onClick={onCopyShareLink} title="Copy a shareable link to this model">
-          <Share2 size={16} />
-          Share
-        </button>
+        <Menu
+          label="File"
+          title="New, import, export and share"
+          icon={<Files size={16} />}
+          items={[
+            { label: "New blank project", icon: <RotateCcw size={15} />, onSelect: onNewBlank },
+            { label: "Import project JSON", icon: <Upload size={15} />, onSelect: () => inputRef.current?.click() },
+            { label: "Import a scan", icon: <Radar size={15} />, onSelect: onImportScan },
+            { label: "Export project JSON", icon: <Download size={15} />, onSelect: onExportJson },
+            { label: "Export topology SVG", icon: <ImageDown size={15} />, onSelect: onExportSvg },
+            { label: "Copy share link", icon: <Share2 size={15} />, onSelect: onCopyShareLink }
+          ]}
+        />
         <button type="button" className="text-button primary" onClick={onPrintReport}>
           <Printer size={16} />
           Report
