@@ -41,6 +41,7 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { GovernanceEditor } from "./components/GovernanceEditor";
 import { KnowledgeBase } from "./components/KnowledgeBase";
+import { MethodologyPanel } from "./components/MethodologyPanel";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
 import { ScenarioGallery } from "./components/ScenarioGallery";
@@ -94,6 +95,7 @@ export function App() {
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [governanceOpen, setGovernanceOpen] = useState(false);
   const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
   const [fitSignal, setFitSignal] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -549,6 +551,7 @@ export function App() {
       { id: "subnets", label: "Manage subnets…", run: openSubnetManager },
       { id: "governance", label: "Edit engagement context…", hint: "GRC", run: () => setGovernanceOpen(true) },
       { id: "knowledge", label: "Open knowledge base…", hint: "Reference", run: () => setKnowledgeBaseOpen(true) },
+      { id: "methodology", label: "How Alchemist assesses…", hint: "Method", run: () => setMethodologyOpen(true) },
       { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
@@ -622,6 +625,7 @@ export function App() {
           onPrintReport={() => window.print()}
           onBrowseScenarios={() => setScenarioGalleryOpen(true)}
           onOpenKnowledgeBase={() => setKnowledgeBaseOpen(true)}
+          onOpenMethodology={() => setMethodologyOpen(true)}
           onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
@@ -746,6 +750,7 @@ export function App() {
         onSave={setEngagement}
       />
       <KnowledgeBase open={knowledgeBaseOpen} onClose={() => setKnowledgeBaseOpen(false)} />
+      <MethodologyPanel open={methodologyOpen} onClose={() => setMethodologyOpen(false)} />
       <ScenarioGallery
         open={scenarioGalleryOpen}
         scenarios={scenarios}

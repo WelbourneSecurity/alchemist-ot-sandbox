@@ -3655,6 +3655,15 @@ button.verdict-finding:hover {
   background: var(--surface-raised);
 }
 
+/* Methodology reuses the knowledge-base shell as a single, narrower reading column. */
+.methodology {
+  width: min(46rem, 100%);
+}
+
+.methodology .kb-body {
+  grid-template-columns: 1fr;
+}
+
 .kb-head {
   display: flex;
   justify-content: space-between;
