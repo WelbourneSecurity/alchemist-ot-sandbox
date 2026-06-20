@@ -116,7 +116,7 @@ export function assessCaf(
 
     if (GOVERNANCE_PRINCIPLES.has(principle.id)) {
       derivedStatus = "not-assessed";
-      rationale = "Governance / people outcome — record a status in the engagement review.";
+      rationale = "Governance / people outcome: record a status in the engagement review.";
     } else if (principle.id === "A2") {
       const documentation = (categoryScore.get("documentation") ?? 0) / 100;
       const elevated = risk.assets.filter((asset) => asset.band === "high" || asset.band === "critical");

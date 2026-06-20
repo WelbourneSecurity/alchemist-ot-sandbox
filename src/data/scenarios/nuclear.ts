@@ -10,7 +10,7 @@ const project: OtProject = {
   name: "Nuclear / High-Consequence (Illustrative)",
   updatedAt: new Date().toISOString(),
   assumptions: [
-    { id: "illustrative", label: "Illustrative teaching scenario only — generic, not based on any real facility." },
+    { id: "illustrative", label: "Illustrative teaching scenario only: generic, not based on any real facility." },
     { id: "advisory", label: "Advisory model only; not an IAEA, ONR or 62443 assessment." },
     { id: "safety", label: "Safety I&C is independent of the control systems; data leaves the safety zone one-way only." }
   ],

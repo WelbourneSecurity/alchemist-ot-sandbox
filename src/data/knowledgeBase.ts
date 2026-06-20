@@ -1,6 +1,6 @@
 export type KbCategory = "Frameworks" | "Asset & risk" | "Architecture" | "Operations" | "Sector";
 
-/** The kind of resource — drives how the library groups and renders a topic. */
+/** The kind of resource; drives how the library groups and renders a topic. */
 export type KbKind = "concept" | "guide" | "checklist" | "cheatsheet" | "resource";
 
 export interface KbSection {
@@ -47,7 +47,7 @@ export function topicKind(topic: KbTopic): KbKind {
 }
 
 /**
- * A browsable OT reference library for engineers and consultants — frameworks, asset
+ * A browsable OT reference library for engineers and consultants; frameworks, asset
  * management, architecture and operations. Static, data-driven so topics are easy to extend.
  */
 export const knowledgeBase: KbTopic[] = [
@@ -56,7 +56,7 @@ export const knowledgeBase: KbTopic[] = [
     title: "OT asset registers & inventory",
     category: "Asset & risk",
     summary:
-      "A complete, current inventory of OT assets, connections and data flows is the foundation of every framework — you cannot protect, patch or assess what you cannot see.",
+      "A complete, current inventory of OT assets, connections and data flows is the foundation of every framework; you cannot protect, patch or assess what you cannot see.",
     sections: [
       {
         heading: "What to capture per asset",
@@ -73,7 +73,7 @@ export const knowledgeBase: KbTopic[] = [
         points: [
           "Prefer passive discovery (SPAN/TAP with a tool like Zeek) to avoid disturbing the process.",
           "Use active scanning only with care and change control; enrich with vendor exports and physical walkdowns.",
-          "Map data flows, not just hosts — conduits and trust boundaries matter as much as assets.",
+          "Map data flows, not just hosts; conduits and trust boundaries matter as much as assets.",
           "Tie updates to management-of-change so the register does not drift."
         ]
       },
@@ -203,7 +203,7 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Good practice",
         points: [
-          "No direct vendor access to control assets — terminate in the IDMZ and broker via a jump host / PAM.",
+          "No direct vendor access to control assets; terminate in the IDMZ and broker via a jump host / PAM.",
           "Enforce MFA, least privilege and named accounts; remove shared and default credentials.",
           "Make access on-demand and time-boxed; record and monitor sessions; review and revoke promptly."
         ]
@@ -221,8 +221,8 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Common protocols",
         points: [
-          "Modbus TCP, DNP3, EtherNet/IP, PROFINET, S7, IEC 61850 (MMS/GOOSE), BACnet — generally no built-in security.",
-          "OPC UA and HTTPS can be secured (certificates, encryption) — verify they are actually configured."
+          "Modbus TCP, DNP3, EtherNet/IP, PROFINET, S7, IEC 61850 (MMS/GOOSE), BACnet; generally no built-in security.",
+          "OPC UA and HTTPS can be secured (certificates, encryption); verify they are actually configured."
         ]
       },
       {
@@ -285,7 +285,7 @@ export const knowledgeBase: KbTopic[] = [
         heading: "Key elements",
         points: [
           "OT-specific response plans with clear roles, safe-state / safe-shutdown procedures and decision authority.",
-          "Validated, offline backups of control logic, configurations and golden images — and tested restoration.",
+          "Validated, offline backups of control logic, configurations and golden images, plus tested restoration.",
           "Exercises and post-incident reviews that feed lessons back into controls and training (CAF D1/D2).",
           "Engagement with the regulator / national authority where the essential function is affected."
         ]
@@ -322,9 +322,9 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Regulation & guidance",
         points: [
-          "IAEA Nuclear Security Series — NSS 17 (computer security at nuclear facilities), NSS 42-G and NSS 33-T.",
+          "IAEA Nuclear Security Series; NSS 17 (computer security at nuclear facilities), NSS 42-G and NSS 33-T.",
           "UK: the Office for Nuclear Regulation (ONR) takes a CAF-based approach to cyber security & information assurance (CS&IA), under the Security Assessment Principles (SyAPs) and NISR 2003.",
-          "Security measures must never undermine nuclear safety — the two are managed together."
+          "Security measures must never undermine nuclear safety; the two are managed together."
         ]
       },
       {
@@ -348,7 +348,7 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Keep safety independent",
         points: [
-          "Safety I&C / SIS should be independent of the basic process control system — separate logic solver and network.",
+          "Safety I&C / SIS should be independent of the basic process control system; separate logic solver and network.",
           "Prefer simple, deterministic, well-understood safety logic over feature-rich connectivity.",
           "Where the safety layer must publish data, use one-way gateways / data diodes so it cannot be written to from outside."
         ]
@@ -356,7 +356,7 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Manage them together",
         points: [
-          "A security change must never invalidate a safety case — involve safety engineering in OT security decisions.",
+          "A security change must never invalidate a safety case; involve safety engineering in OT security decisions.",
           "Bring OT security into management-of-change and functional safety assessment."
         ]
       }
@@ -378,7 +378,7 @@ export const knowledgeBase: KbTopic[] = [
           "3. Enrich from authoritative sources: vendor/system exports, network diagrams, firewall configs, CMDB.",
           "4. Validate with physical walkdowns for Level 0/1 field devices that are invisible on the network.",
           "5. Record make/model/firmware, owner, criticality, zone/conduit, address and security posture.",
-          "6. Use only careful, scheduled, rate-limited active scanning to fill gaps — never blind-scan live control networks.",
+          "6. Use only careful, scheduled, rate-limited active scanning to fill gaps; never blind-scan live control networks.",
           "7. Tie updates to management-of-change so the inventory stays current."
         ]
       }
@@ -396,7 +396,7 @@ export const knowledgeBase: KbTopic[] = [
         heading: "Steps",
         points: [
           "1. Group assets of similar risk and function into zones, often aligned to Purdue levels.",
-          "2. Identify every required flow between zones and define it as a conduit — deny everything else.",
+          "2. Identify every required flow between zones and define it as a conduit; deny everything else.",
           "3. Publish IT→OT services through an IT/OT DMZ; never allow direct enterprise→control connections.",
           "4. Set a target Security Level (SL-T) per zone from a risk assessment; design controls to meet it.",
           "5. Broker administrative access via jump hosts; use data diodes for one-way historian/telemetry flows.",
@@ -416,7 +416,7 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Steps",
         points: [
-          "1. Terminate all external access in the IT/OT DMZ — no direct path to control assets.",
+          "1. Terminate all external access in the IT/OT DMZ; no direct path to control assets.",
           "2. Broker every session through a jump host / PAM; named accounts, least privilege, no shared logins.",
           "3. Enforce MFA and remove default and standing credentials.",
           "4. Make access on-demand and time-boxed; require approval and a business justification.",
@@ -439,7 +439,7 @@ export const knowledgeBase: KbTopic[] = [
         points: [
           "1. Confirm zones and conduits, and the target SL (SL-T) per zone from the risk assessment (62443-3-2).",
           "2. Assess controls against each Foundational Requirement (FR1–FR7) for the zone and its conduits.",
-          "3. Take the zone SL-A as the weakest FR — the chain is only as strong as its weakest link.",
+          "3. Take the zone SL-A as the weakest FR; the chain is only as strong as its weakest link.",
           "4. Record the gap (SL-T minus SL-A) and which FR is limiting.",
           "5. Plan remediation against the limiting FRs; re-assess after changes."
         ]
@@ -459,7 +459,7 @@ export const knowledgeBase: KbTopic[] = [
         points: [
           "Passive first: SPAN/TAP plus a protocol-aware tool (Zeek, GRASSMARLIN) reveals hosts and flows with zero risk.",
           "Treat active scanning as intrusive: legacy PLCs and field devices can crash under aggressive scans.",
-          "If you must scan actively — get approval, schedule a window, rate-limit, avoid aggressive timing, and watch the process.",
+          "If you must scan actively; get approval, schedule a window, rate-limit, avoid aggressive timing, and watch the process.",
           "Never run vulnerability scanners against live safety or control systems without explicit sign-off.",
           "Capture results into the asset register and reconcile with walkdowns."
         ]
@@ -498,7 +498,7 @@ export const knowledgeBase: KbTopic[] = [
       {
         heading: "Check",
         points: [
-          "No direct external path to control assets — access terminates in the IT/OT DMZ.",
+          "No direct external path to control assets; access terminates in the IT/OT DMZ.",
           "Brokered via jump host / PAM with named accounts and least privilege.",
           "MFA enforced; default and shared credentials removed.",
           "Access is on-demand, approved and time-boxed.",
@@ -520,7 +520,7 @@ export const knowledgeBase: KbTopic[] = [
         heading: "Per conduit / rule",
         points: [
           "Documented business justification and owner.",
-          "Least privilege: specific source, destination, port and protocol — no any-any.",
+          "Least privilege: specific source, destination, port and protocol; no any-any.",
           "Direction enforced; one-way where possible (data diode for telemetry out of high-assurance zones).",
           "Inspected and logged at the boundary.",
           "No undocumented or expired temporary rules; review date set.",
@@ -581,18 +581,18 @@ export const knowledgeBase: KbTopic[] = [
     table: {
       columns: ["Protocol", "Port", "Transport", "Security note"],
       rows: [
-        ["Modbus TCP", "502", "TCP", "No auth/encryption — restrict peers"],
+        ["Modbus TCP", "502", "TCP", "No auth/encryption; restrict peers"],
         ["DNP3", "20000", "TCP/UDP", "Add Secure Authentication; often cleartext"],
-        ["EtherNet/IP", "44818 / 2222", "TCP/UDP", "CIP — no native security"],
+        ["EtherNet/IP", "44818 / 2222", "TCP/UDP", "CIP; no native security"],
         ["PROFINET", "34962-34964", "TCP/UDP", "No native security; L2-sensitive"],
         ["S7comm", "102", "TCP", "Siemens; no native authentication"],
-        ["OPC UA", "4840", "TCP", "Can be secured — verify policies/certs"],
-        ["OPC DA (DCOM)", "135 + dynamic", "TCP", "Legacy DCOM — hard to firewall"],
+        ["OPC UA", "4840", "TCP", "Can be secured; verify policies/certs"],
+        ["OPC DA (DCOM)", "135 + dynamic", "TCP", "Legacy DCOM; hard to firewall"],
         ["IEC 61850 MMS", "102", "TCP", "Substations; GOOSE/SV are L2 multicast"],
         ["IEC 60870-5-104", "2404", "TCP", "Telecontrol; no native security"],
         ["BACnet/IP", "47808", "UDP", "Building automation; no native security"],
-        ["HTTPS", "443", "TCP", "Encrypted — verify certificate ownership"],
-        ["RDP", "3389", "TCP", "Remote desktop — broker and require MFA"]
+        ["HTTPS", "443", "TCP", "Encrypted; verify certificate ownership"],
+        ["RDP", "3389", "TCP", "Remote desktop; broker and require MFA"]
       ]
     },
     references: ["ISA/IEC 62443-3-3 FR3/FR4", "NIST SP 800-82 Rev. 3"]
@@ -601,7 +601,7 @@ export const knowledgeBase: KbTopic[] = [
     id: "cheatsheet-attack-ics",
     kind: "cheatsheet",
     category: "Operations",
-    title: "MITRE ATT&CK for ICS — tactics",
+    title: "MITRE ATT&CK for ICS tactics",
     summary: "The tactics an adversary moves through against industrial control systems.",
     sections: [],
     table: {
@@ -633,7 +633,7 @@ export const knowledgeBase: KbTopic[] = [
     table: {
       columns: ["FR", "Name", "Focus"],
       rows: [
-        ["FR1", "Identification & authentication control", "Who/what can access — accounts, MFA"],
+        ["FR1", "Identification & authentication control", "Who/what can access (accounts, MFA)"],
         ["FR2", "Use control", "Least privilege, authorisation, approval"],
         ["FR3", "System integrity", "Patching, hardening, anti-malware, anti-tamper"],
         ["FR4", "Data confidentiality", "Protect data in transit/at rest; no cleartext"],
@@ -654,13 +654,13 @@ export const knowledgeBase: KbTopic[] = [
     table: {
       columns: ["Objective", "Principles"],
       rows: [
-        ["A — Managing security risk", "A1 Governance · A2 Risk management · A3 Asset management · A4 Supply chain"],
+        ["A: Managing security risk", "A1 Governance · A2 Risk management · A3 Asset management · A4 Supply chain"],
         [
-          "B — Protecting against cyber attack",
+          "B: Protecting against cyber attack",
           "B1 Policies & processes · B2 Identity & access · B3 Data security · B4 System security · B5 Resilient networks · B6 Staff awareness"
         ],
-        ["C — Detecting cyber security events", "C1 Security monitoring · C2 Proactive event discovery"],
-        ["D — Minimising the impact", "D1 Response & recovery planning · D2 Lessons learned"]
+        ["C: Detecting cyber security events", "C1 Security monitoring · C2 Proactive event discovery"],
+        ["D: Minimising the impact", "D1 Response & recovery planning · D2 Lessons learned"]
       ]
     },
     references: ["NCSC Cyber Assessment Framework"]
@@ -677,7 +677,7 @@ export const knowledgeBase: KbTopic[] = [
         label: "ISA/IEC 62443 series (ISA)",
         url: "https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series-of-standards"
       },
-      { label: "NIST SP 800-82 Rev. 3 — Guide to OT Security", url: "https://csrc.nist.gov/pubs/sp/800/82/r3/final" },
+      { label: "NIST SP 800-82 Rev. 3: Guide to OT Security", url: "https://csrc.nist.gov/pubs/sp/800/82/r3/final" },
       { label: "NIST Cybersecurity Framework 2.0", url: "https://www.nist.gov/cyberframework" },
       { label: "NCSC Cyber Assessment Framework (CAF)", url: "https://www.ncsc.gov.uk/collection/cyber-assessment-framework" },
       { label: "IAEA Nuclear Security Series", url: "https://www.iaea.org/resources/nuclear-security-series" }
@@ -693,7 +693,7 @@ export const knowledgeBase: KbTopic[] = [
     sections: [],
     links: [
       { label: "NCSC (UK)", url: "https://www.ncsc.gov.uk/", note: "Guidance & CAF" },
-      { label: "CISA — Industrial Control Systems", url: "https://www.cisa.gov/topics/industrial-control-systems", note: "ICS advisories" },
+      { label: "CISA: Industrial Control Systems", url: "https://www.cisa.gov/topics/industrial-control-systems", note: "ICS advisories" },
       { label: "MITRE ATT&CK for ICS", url: "https://attack.mitre.org/matrices/ics/" },
       { label: "SANS ICS Security", url: "https://www.sans.org/industrial-control-systems-security/", note: "Training & resources" },
       { label: "ISA Global Cybersecurity Alliance", url: "https://gca.isa.org/" }

@@ -14,7 +14,7 @@ export function parseNmapXml(text: string): ParsedImport {
 
   const hostNodes = findAll(doc, "host");
   if (hostNodes.length === 0) {
-    warnings.push("No <host> elements found — is this an Nmap XML (-oX) export?");
+    warnings.push("No <host> elements found. Is this an Nmap XML (-oX) export?");
   }
 
   let down = 0;

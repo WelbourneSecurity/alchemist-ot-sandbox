@@ -38,7 +38,7 @@ export const cafPrinciples: CafPrinciple[] = [
     title: "Risk management",
     summary: "A proportionate, documented process to identify, assess and treat risks to the essential function.",
     otGuidance:
-      "Use a consequence-led (safety/availability) OT risk method per IEC 62443-3-2 and NIST SP 800-82. Maintain a risk register with explicit treatment decisions, owners and residual risk — not just a list of findings.",
+      "Use a consequence-led (safety/availability) OT risk method per IEC 62443-3-2 and NIST SP 800-82. Maintain a risk register with explicit treatment decisions, owners and residual risk, not just a list of findings.",
     references: ["NCSC CAF Principle A2", "IEC 62443-3-2", "NIST SP 800-82"]
   },
   {
@@ -47,7 +47,7 @@ export const cafPrinciples: CafPrinciple[] = [
     title: "Asset management",
     summary: "Everything required to operate the essential function is determined and understood.",
     otGuidance:
-      "Maintain a complete, current inventory of OT assets, connections, protocols and data flows. You cannot protect what you cannot see — capture make/model/firmware, owner, criticality and network address.",
+      "Maintain a complete, current inventory of OT assets, connections, protocols and data flows. You cannot protect what you cannot see; capture make/model/firmware, owner, criticality and network address.",
     references: ["NCSC CAF Principle A3", "NIST SP 800-82", "CISA OT asset inventory guidance"]
   },
   {
@@ -65,7 +65,7 @@ export const cafPrinciples: CafPrinciple[] = [
     title: "Service protection policies, processes & procedures",
     summary: "Policies and processes that secure the essential function are defined, communicated and followed.",
     otGuidance:
-      "Define and use OT-appropriate security procedures — secure configuration baselines, change control / management of change, and removable-media controls — that engineers can actually follow in the plant.",
+      "Define and use OT-appropriate security procedures (secure configuration baselines, change control / management of change, and removable-media controls) that engineers can actually follow in the plant.",
     references: ["NCSC CAF Principle B1", "IEC 62443-2-1"]
   },
   {
@@ -101,7 +101,7 @@ export const cafPrinciples: CafPrinciple[] = [
     title: "Resilient networks and systems",
     summary: "The essential function is protected through resilient networks and systems.",
     otGuidance:
-      "Design segmented, defensible networks — Purdue zones and tightly controlled conduits — so a compromise is contained and cannot cascade to the essential function. Restrict and inspect cross-boundary flows.",
+      "Design segmented, defensible networks (Purdue zones and tightly controlled conduits) so a compromise is contained and cannot cascade to the essential function. Restrict and inspect cross-boundary flows.",
     references: ["NCSC CAF Principle B5", "IEC 62443-3-3 FR5", "NIST SP 800-82"]
   },
   {

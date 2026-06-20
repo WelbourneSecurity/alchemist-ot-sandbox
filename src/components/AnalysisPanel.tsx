@@ -400,7 +400,7 @@ export function AnalysisPanel({
           </table>
           <p className="muted">
             SL-A (achieved) is capped by the weakest Foundational Requirement (FR1–FR7); the limiting requirement(s) are
-            marked. Set the target per zone — any zone below target appears as a finding. Hover a column for its name.
+            marked. Set the target per zone; any zone below target appears as a finding. Hover a column for its name.
           </p>
         </div>
       ) : null}
@@ -471,7 +471,7 @@ export function AnalysisPanel({
                     <strong>{objective.id}</strong>
                     <span>
                       {objective.achieved}A · {objective.partial}P · {objective.notAchieved}N
-                      {objective.notAssessed > 0 ? ` · ${objective.notAssessed}—` : ""}
+                      {objective.notAssessed > 0 ? ` · ${objective.notAssessed}?` : ""}
                     </span>
                   </div>
                 );
@@ -580,7 +580,7 @@ export function AnalysisPanel({
           </div>
           <p className="muted">
             Techniques in red are plausibly enabled by the current findings. A curated slice of MITRE ATT&amp;CK for ICS
-            mapped from the assessment — not a claim of full coverage.
+            mapped from the assessment, not a claim of full coverage.
           </p>
         </div>
       ) : null}
