@@ -61,6 +61,7 @@ describe("knowledgeBase", () => {
       "guide-asset-inventory",
       "checklist-ir-runbook",
       "cheatsheet-protocols-ports",
+      "cheatsheet-crosswalk",
       "resource-standards"
     ]) {
       expect(ids.has(id)).toBe(true);
