@@ -81,7 +81,7 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
         <div className="kb-head">
           <div>
             <strong>OT knowledge base</strong>
-            <p>Reference for OT engineers and assessors — concepts, practical guides, checklists, cheat-sheets and links.</p>
+            <p>Reference for OT engineers and assessors: concepts, practical guides, checklists, cheat-sheets and links.</p>
           </div>
           <button type="button" className="rail-collapse" onClick={onClose} title="Close" aria-label="Close knowledge base">
             <X size={16} aria-hidden="true" />

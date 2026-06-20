@@ -436,7 +436,7 @@ export function assessProject(project: OtProject): SecurityAssessment {
         title: `Zone below target Security Level (SL-A ${zoneSL.achieved} vs SL-T ${zoneSL.target})`,
         detail: `${zoneDef.levelLabel} ${zoneDef.name} achieves SL ${zoneSL.achieved} against a target of SL ${zoneSL.target}. Limiting requirement(s): ${limiting}.`,
         remediation:
-          "Close the weakest Foundational Requirement(s) for this zone — strengthen the controls and conduit posture (authentication, use control, integrity, data flow, monitoring, or availability) that hold the achieved level down.",
+          "Close the weakest Foundational Requirement(s) for this zone; strengthen the controls and conduit posture (authentication, use control, integrity, data flow, monitoring, or availability) that hold the achieved level down.",
         affectedAssetIds: project.assets.filter((asset) => asset.zone === zoneSL.zone).map((asset) => asset.id),
         affectedConduitIds: [],
         references: [standardReferences.isa62443]

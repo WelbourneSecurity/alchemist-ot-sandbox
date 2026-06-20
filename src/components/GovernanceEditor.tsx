@@ -69,7 +69,7 @@ export function GovernanceEditor({ open, engagement, onClose, onSave }: Governan
         <div className="governance-editor-head">
           <div>
             <strong>Engagement context</strong>
-            <p>Governance and scope for this assessment — used in the report header and CAF compliance view.</p>
+            <p>Governance and scope for this assessment, used in the report header and CAF compliance view.</p>
           </div>
           <button type="button" className="rail-collapse" onClick={onClose} title="Close" aria-label="Close engagement editor">
             <X size={16} aria-hidden="true" />

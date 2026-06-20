@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <strong>Something went wrong</strong>
           <p>
             The app hit an unexpected error and stopped. Reloading usually fixes it. If it keeps happening, a saved
-            project in this browser may be the cause — reset it below.
+            project in this browser may be the cause; reset it below.
           </p>
           <pre>{this.state.error.message}</pre>
           <div className="app-error-actions">

@@ -139,7 +139,7 @@ export function PrintableReport({ project, assessment, reachability }: Printable
                 <td>{principle.id}</td>
                 <td>{cafPrinciple(principle.id).title}</td>
                 <td>{CAF_STATUS_LABEL[principle.status]}</td>
-                <td>{principle.gap || "—"}</td>
+                <td>{principle.gap || "–"}</td>
               </tr>
             ))}
           </tbody>
@@ -172,10 +172,10 @@ export function PrintableReport({ project, assessment, reachability }: Printable
                   <td>{item.likelihood}</td>
                   <td>{item.score}</td>
                   <td>{item.band}</td>
-                  <td>{treatment?.decision ?? "—"}</td>
-                  <td>{treatment?.owner || "—"}</td>
-                  <td>{treatment?.targetDate || "—"}</td>
-                  <td>{treatment?.residual ?? "—"}</td>
+                  <td>{treatment?.decision ?? "–"}</td>
+                  <td>{treatment?.owner || "–"}</td>
+                  <td>{treatment?.targetDate || "–"}</td>
+                  <td>{treatment?.residual ?? "–"}</td>
                 </tr>
               );
             })}

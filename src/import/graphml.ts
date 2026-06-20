@@ -45,7 +45,7 @@ export function parseGraphml(text: string): ParsedImport {
 
   const nodeNodes = findAll(doc, "node");
   if (nodeNodes.length === 0) {
-    warnings.push("No <node> elements found — is this a GraphML export?");
+    warnings.push("No <node> elements found. Is this a GraphML export?");
   }
 
   const idToKey = new Map<string, string>();
@@ -108,7 +108,7 @@ export function parseGraphml(text: string): ParsedImport {
   }
 
   if (missingIp > 0) {
-    warnings.push(`${missingIp} node${missingIp === 1 ? "" : "s"} had no IP — used the label or id instead.`);
+    warnings.push(`${missingIp} node${missingIp === 1 ? "" : "s"} had no IP; used the label or id instead.`);
   }
 
   return { format: "graphml", hosts: [...hostMap.values()], flows, warnings };

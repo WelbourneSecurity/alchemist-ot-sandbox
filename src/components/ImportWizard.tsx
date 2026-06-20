@@ -11,9 +11,9 @@ interface ImportWizardProps {
 const FORMAT_ORDER: ImportFormat[] = ["nmap-xml", "zeek-conn", "graphml", "csv-inventory"];
 
 const FORMAT_HINTS: Record<ImportFormat, string> = {
-  "nmap-xml": "nmap -oX scan.xml — discovered hosts, open ports, OS and MAC vendor.",
-  "zeek-conn": "Zeek/Bro conn.log (JSON lines or TSV) — observed flows become assets and conduits.",
-  graphml: "GraphML from Grassmarlin, Gephi or yEd — nodes and edges become assets and conduits.",
+  "nmap-xml": "nmap -oX scan.xml: discovered hosts, open ports, OS and MAC vendor.",
+  "zeek-conn": "Zeek/Bro conn.log (JSON lines or TSV): observed flows become assets and conduits.",
+  graphml: "GraphML from Grassmarlin, Gephi or yEd: nodes and edges become assets and conduits.",
   "csv-inventory": "CSV with name/ip/type/vlan/protocols columns, or a source,target connections list."
 };
 
@@ -187,7 +187,7 @@ export function ImportWizard({ open, onClose, onApply }: ImportWizardProps) {
               </ul>
             ) : null}
             {result.assets.length === 0 ? (
-              <p className="muted">No assets were parsed — check the format selector matches the file.</p>
+              <p className="muted">No assets were parsed; check the format selector matches the file.</p>
             ) : null}
 
             <fieldset className="import-mode">

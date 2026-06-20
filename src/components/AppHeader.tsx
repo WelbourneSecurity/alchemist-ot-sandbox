@@ -63,7 +63,7 @@ export function AppHeader({
         className="brand-block"
         href="https://welbournesecurity.com"
         title="Back to welbournesecurity.com"
-        aria-label="Welbourne Security — back to main site"
+        aria-label="Welbourne Security: back to main site"
       >
         <div className="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" focusable="false">

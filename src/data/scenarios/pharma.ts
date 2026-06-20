@@ -8,7 +8,7 @@ const project: OtProject = {
   updatedAt: new Date().toISOString(),
   assumptions: [
     { id: "advisory", label: "Advisory model only; not a GxP, 21 CFR Part 11 or 62443 audit." },
-    { id: "gmp", label: "A GMP-regulated facility — data integrity and validation sit alongside cyber security." },
+    { id: "gmp", label: "A GMP-regulated facility: data integrity and validation sit alongside cyber security." },
     { id: "scope", label: "Scope is one bioreactor suite and its shared DCS." }
   ],
   zoneTargets: { level1: 3, level2: 3, level3: 2 },

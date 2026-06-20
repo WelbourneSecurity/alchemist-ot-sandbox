@@ -108,7 +108,7 @@ export function parseZeekConn(text: string): ParsedImport {
   }
 
   if (hostMap.size === 0) {
-    warnings.push("No connections parsed — expected a Zeek conn.log (JSON lines or TSV).");
+    warnings.push("No connections parsed; expected a Zeek conn.log (JSON lines or TSV).");
   }
 
   return { format: "zeek-conn", hosts: [...hostMap.values()], flows, warnings };

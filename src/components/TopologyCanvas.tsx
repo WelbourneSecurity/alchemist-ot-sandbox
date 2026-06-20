@@ -168,7 +168,7 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
               {data.asset.name}
             </strong>
           )}
-          <span className="asset-node-zone" title={`${zone.levelLabel} — ${zone.name}`}>
+          <span className="asset-node-zone" title={`${zone.levelLabel}: ${zone.name}`}>
             {zone.shortName}
           </span>
         </div>
@@ -571,7 +571,7 @@ function TopologyCanvasInner({
                 ? "Select the destination asset for the new conduit."
                 : "Select the source asset for the new conduit."
               : isPurdue
-                ? "Assets projected into Purdue levels — drag between lanes to set a zone."
+                ? "Assets projected into Purdue levels; drag between lanes to set a zone."
                 : "Lay the network out freely and group assets into subnets."}
           </p>
           <div className="canvas-stats" aria-label="Topology summary">

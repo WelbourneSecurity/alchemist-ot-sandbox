@@ -22,7 +22,7 @@ export function assetBadges(asset: Asset): AssetBadge[] {
   }
 
   if (asset.lifecycleStatus === "obsolete") {
-    badges.push({ key: "eol", label: "EOL", tone: "danger", title: "Obsolete / end-of-life — unsupported" });
+    badges.push({ key: "eol", label: "EOL", tone: "danger", title: "Obsolete / end-of-life (unsupported)" });
   } else if (asset.lifecycleStatus === "limited") {
     badges.push({ key: "ltd", label: "LTD", tone: "warn", title: "Limited vendor support" });
   }
