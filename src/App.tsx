@@ -42,6 +42,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { GovernanceEditor } from "./components/GovernanceEditor";
 import { KnowledgeBase } from "./components/KnowledgeBase";
 import { MethodologyPanel } from "./components/MethodologyPanel";
+import { MAX_SHARE_PAYLOAD, buildShareUrl, decodeProjectFromShare, sharePayloadFromHash } from "./engine/shareLink";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
 import { ScenarioGallery } from "./components/ScenarioGallery";
@@ -433,6 +434,48 @@ export function App() {
     [commitProject, pushToast]
   );
 
+  // Load a shared model from a #share= link on first mount (overrides the stored project).
+  useEffect(() => {
+    const payload = sharePayloadFromHash(window.location.hash);
+    if (!payload) {
+      return;
+    }
+    let cancelled = false;
+    decodeProjectFromShare(payload).then((result) => {
+      if (cancelled) {
+        return;
+      }
+      if (result.ok) {
+        commitProject(result.project, false);
+        setSelectedId(null);
+        pushToast("Loaded shared project", "success");
+      } else {
+        pushToast("Could not load the shared link", "danger");
+      }
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Run once on mount for the incoming share link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCopyShareLink = useCallback(async () => {
+    try {
+      const url = await buildShareUrl(project);
+      await navigator.clipboard.writeText(url);
+      pushToast(
+        url.length > MAX_SHARE_PAYLOAD
+          ? "Share link copied (large model; the link may be too long for some browsers)"
+          : "Share link copied to clipboard",
+        url.length > MAX_SHARE_PAYLOAD ? "info" : "success"
+      );
+    } catch {
+      pushToast("Could not create a share link", "danger");
+    }
+  }, [project, pushToast]);
+
   const handleExportJson = useCallback(() => {
     downloadJson(project.name, serializeProject(project));
     pushToast("Exported project JSON", "success");
@@ -622,6 +665,7 @@ export function App() {
           onImportScan={() => setImportWizardOpen(true)}
           onExportJson={handleExportJson}
           onExportSvg={handleExportSvg}
+          onCopyShareLink={() => void handleCopyShareLink()}
           onPrintReport={() => window.print()}
           onBrowseScenarios={() => setScenarioGalleryOpen(true)}
           onOpenKnowledgeBase={() => setKnowledgeBaseOpen(true)}

@@ -1,4 +1,4 @@
-import { BookOpen, Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Sun, Upload, Undo2 } from "lucide-react";
+import { BookOpen, Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Share2, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
 import { ScoreGauge } from "./ScoreGauge";
@@ -14,6 +14,7 @@ interface AppHeaderProps {
   onImportScan: () => void;
   onExportJson: () => void;
   onExportSvg: () => void;
+  onCopyShareLink: () => void;
   onPrintReport: () => void;
   onBrowseScenarios: () => void;
   onOpenKnowledgeBase: () => void;
@@ -48,6 +49,7 @@ export function AppHeader({
   onImportScan,
   onExportJson,
   onExportSvg,
+  onCopyShareLink,
   onPrintReport,
   onBrowseScenarios,
   onOpenKnowledgeBase,
@@ -132,6 +134,10 @@ export function AppHeader({
         <button type="button" className="text-button" onClick={onExportSvg}>
           <ImageDown size={16} />
           SVG
+        </button>
+        <button type="button" className="text-button" onClick={onCopyShareLink} title="Copy a shareable link to this model">
+          <Share2 size={16} />
+          Share
         </button>
         <button type="button" className="text-button primary" onClick={onPrintReport}>
           <Printer size={16} />
