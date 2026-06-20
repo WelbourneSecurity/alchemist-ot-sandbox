@@ -6,6 +6,7 @@ export interface MenuItem {
   icon?: ReactNode;
   onSelect: () => void;
   disabled?: boolean;
+  current?: boolean;
 }
 
 interface MenuProps {
@@ -17,12 +18,22 @@ interface MenuProps {
 }
 
 /**
- * A sharp, monochrome dropdown for grouping header actions. Closes on outside click or Escape;
- * items run their action and close. No radius or shadow, in keeping with the brand.
+ * A sharp, monochrome dropdown for grouping header actions. Closes on outside click or Escape; items
+ * run their action and close. Keyboard accessible: opens focused on the first item, Arrow Up/Down move
+ * between items, and focus returns to the trigger on close. No radius or shadow, in keeping with the brand.
  */
 export function Menu({ label, items, icon, align = "right", title }: MenuProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const close = (returnFocus = true) => {
+    setOpen(false);
+    if (returnFocus) {
+      triggerRef.current?.focus();
+    }
+  };
 
   useEffect(() => {
     if (!open) {
@@ -35,11 +46,12 @@ export function Menu({ label, items, icon, align = "right", title }: MenuProps) 
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        close();
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    panelRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')?.focus();
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
@@ -50,6 +62,7 @@ export function Menu({ label, items, icon, align = "right", title }: MenuProps) 
     <div className={`menu${open ? " menu-open" : ""}`} ref={wrapRef}>
       <button
         type="button"
+        ref={triggerRef}
         className="text-button menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -61,16 +74,39 @@ export function Menu({ label, items, icon, align = "right", title }: MenuProps) 
         <ChevronDown size={14} aria-hidden="true" />
       </button>
       {open ? (
-        <div className={`menu-panel menu-panel-${align}`} role="menu">
+        <div
+          className={`menu-panel menu-panel-${align}`}
+          role="menu"
+          ref={panelRef}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+              return;
+            }
+            event.preventDefault();
+            const focusables = Array.from(
+              panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? []
+            );
+            if (focusables.length === 0) {
+              return;
+            }
+            const index = focusables.indexOf(document.activeElement as HTMLButtonElement);
+            const nextIndex =
+              event.key === "ArrowDown"
+                ? (index + 1) % focusables.length
+                : (index - 1 + focusables.length) % focusables.length;
+            focusables[nextIndex]?.focus();
+          }}
+        >
           {items.map((item) => (
             <button
               type="button"
               key={item.label}
               className="menu-item"
               role="menuitem"
+              aria-current={item.current ? "true" : undefined}
               disabled={item.disabled}
               onClick={() => {
-                setOpen(false);
+                close();
                 item.onSelect();
               }}
             >

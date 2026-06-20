@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sampleProject } from "../data/sampleProject";
 import { assessProject } from "./scoring";
-import { RISK_SCALE, assessRisk, consequenceFor, derivedConsequence, likelihoodForAsset, riskBand } from "./risk";
+import { RISK_SCALE, assessRisk, consequenceFor, countHighRisk, derivedConsequence, likelihoodForAsset, riskBand } from "./risk";
 
 describe("assessRisk", () => {
   const findings = assessProject(sampleProject).findings;
@@ -43,5 +43,10 @@ describe("assessRisk", () => {
 
   it("gives findings-free assets the lowest likelihood", () => {
     expect(likelihoodForAsset("no-such-asset", findings)).toBe(1);
+  });
+
+  it("counts only the high and critical band assets", () => {
+    const expected = result.assets.filter((risk) => risk.band === "critical" || risk.band === "high").length;
+    expect(countHighRisk(result)).toBe(expected);
   });
 });
