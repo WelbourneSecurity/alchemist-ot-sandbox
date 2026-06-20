@@ -20,7 +20,7 @@ function toBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function fromBase64Url(value: string): Uint8Array {
+function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (value.length % 4)) % 4);
   const binary = atob(padded);
   const bytes = new Uint8Array(binary.length);
@@ -36,7 +36,7 @@ async function gzip(text: string): Promise<Uint8Array> {
   return new Uint8Array(buffer);
 }
 
-async function gunzip(bytes: Uint8Array): Promise<string> {
+async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
   return new Response(stream).text();
 }
