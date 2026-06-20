@@ -1,4 +1,4 @@
-import { BookOpen, Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, Sun, Upload, Undo2 } from "lucide-react";
+import { BookOpen, Download, ImageDown, LayoutGrid, Moon, Printer, Radar, Redo2, RotateCcw, ScrollText, Sun, Upload, Undo2 } from "lucide-react";
 import { useRef } from "react";
 import type { OtProject } from "../models/types";
 import { ScoreGauge } from "./ScoreGauge";
@@ -17,6 +17,7 @@ interface AppHeaderProps {
   onPrintReport: () => void;
   onBrowseScenarios: () => void;
   onOpenKnowledgeBase: () => void;
+  onOpenMethodology: () => void;
   onNewBlank: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -50,6 +51,7 @@ export function AppHeader({
   onPrintReport,
   onBrowseScenarios,
   onOpenKnowledgeBase,
+  onOpenMethodology,
   onNewBlank,
   onUndo,
   onRedo,
@@ -110,6 +112,10 @@ export function AppHeader({
         <button type="button" className="text-button" onClick={onOpenKnowledgeBase} title="OT knowledge base & reference">
           <BookOpen size={16} />
           Reference
+        </button>
+        <button type="button" className="text-button" onClick={onOpenMethodology} title="How Alchemist scores and assesses">
+          <ScrollText size={16} />
+          Method
         </button>
         <button type="button" className="text-button" onClick={() => inputRef.current?.click()}>
           <Upload size={16} />

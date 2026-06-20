@@ -4,7 +4,7 @@ import { findReachability } from "./reachability";
 import { assessSecurityLevels, foundationalRequirements } from "./securityLevels";
 import type { Asset, Conduit, Finding, OtProject, ScoreCategory, SecurityAssessment, Severity } from "../models/types";
 
-const categoryWeights: Record<ScoreCategory, number> = {
+export const categoryWeights: Record<ScoreCategory, number> = {
   segmentation: 0.22,
   remoteAccess: 0.16,
   identity: 0.14,
@@ -15,12 +15,20 @@ const categoryWeights: Record<ScoreCategory, number> = {
   documentation: 0.04
 };
 
-const severityDeduction: Record<Severity, number> = {
+export const severityDeduction: Record<Severity, number> = {
   critical: 28,
   high: 18,
   medium: 10,
   low: 5
 };
+
+/** Score bands (descending by minimum). The advisory rating maps to the first band it meets. */
+export const scoreBands: Array<{ band: SecurityAssessment["band"]; label: string; min: number }> = [
+  { band: "strong", label: "Strong", min: 82 },
+  { band: "fair", label: "Fair", min: 64 },
+  { band: "weak", label: "Weak", min: 45 },
+  { band: "critical", label: "Critical", min: 0 }
+];
 
 const legacyProtocols = new Set([
   "modbus",
@@ -36,16 +44,7 @@ const legacyProtocols = new Set([
 ]);
 
 function scoreBand(score: number): SecurityAssessment["band"] {
-  if (score >= 82) {
-    return "strong";
-  }
-  if (score >= 64) {
-    return "fair";
-  }
-  if (score >= 45) {
-    return "weak";
-  }
-  return "critical";
+  return (scoreBands.find((entry) => score >= entry.min) ?? scoreBands[scoreBands.length - 1]).band;
 }
 
 function stableId(category: ScoreCategory, title: string, seed: string) {
