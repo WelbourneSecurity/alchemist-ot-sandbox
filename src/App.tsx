@@ -44,6 +44,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { GovernanceEditor } from "./components/GovernanceEditor";
 import { KnowledgeBase } from "./components/KnowledgeBase";
 import { MethodologyPanel } from "./components/MethodologyPanel";
+import { Tour, TOUR_SEEN_KEY } from "./components/Tour";
 import { MAX_SHARE_PAYLOAD, buildShareUrl, decodeProjectFromShare, sharePayloadFromHash } from "./engine/shareLink";
 import { SubnetManager } from "./components/SubnetManager";
 import { ImportWizard } from "./components/ImportWizard";
@@ -64,7 +65,7 @@ function cloneProject(project: OtProject): OtProject {
 
 interface AppProps {
   onGoHome: () => void;
-  initialIntent?: "reference" | "methodology";
+  initialIntent?: "reference" | "methodology" | "tour";
   theme: "dark" | "light";
   onToggleTheme: () => void;
 }
@@ -89,6 +90,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
   const [governanceOpen, setGovernanceOpen] = useState(false);
   const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [savedProjects, setSavedProjects] = useState(() => listProjects());
   const [currentProjectId, setCurrentProjectId] = useState(() => getCurrentProjectId());
   const [scenarioGalleryOpen, setScenarioGalleryOpen] = useState(false);
@@ -112,12 +114,17 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
     writeStoredProject(project);
   }, [project]);
 
-  // Open the requested surface when the dashboard launches into a specific intent.
+  // Open the requested surface when the dashboard launches into a specific intent, and run the
+  // guided tour on a first-time visit to the workbench.
   useEffect(() => {
     if (initialIntent === "reference") {
       setKnowledgeBaseOpen(true);
     } else if (initialIntent === "methodology") {
       setMethodologyOpen(true);
+    } else if (initialIntent === "tour") {
+      setTourOpen(true);
+    } else if (!window.localStorage.getItem(TOUR_SEEN_KEY)) {
+      setTourOpen(true);
     }
     // Run once on mount for the entry intent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -607,6 +614,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
       { id: "governance", label: "Edit engagement context…", hint: "GRC", run: () => setGovernanceOpen(true) },
       { id: "knowledge", label: "Open knowledge base…", hint: "Reference", run: () => setKnowledgeBaseOpen(true) },
       { id: "methodology", label: "How Alchemist assesses…", hint: "Method", run: () => setMethodologyOpen(true) },
+      { id: "tour", label: "Take the guided tour", hint: "Help", run: () => setTourOpen(true) },
       { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: onToggleTheme },
       { id: "home", label: "Back to dashboard", hint: "Home", run: onGoHome },
@@ -815,6 +823,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
       />
       <KnowledgeBase open={knowledgeBaseOpen} onClose={() => setKnowledgeBaseOpen(false)} />
       <MethodologyPanel open={methodologyOpen} onClose={() => setMethodologyOpen(false)} />
+      <Tour open={tourOpen} onClose={() => setTourOpen(false)} />
       <ScenarioGallery
         open={scenarioGalleryOpen}
         scenarios={scenarios}
