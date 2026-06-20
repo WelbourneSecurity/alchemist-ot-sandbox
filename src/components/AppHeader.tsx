@@ -10,6 +10,7 @@ interface AppHeaderProps {
   canUndo: boolean;
   canRedo: boolean;
   onProjectNameChange: (name: string) => void;
+  onGoHome: () => void;
   onImport: (file: File) => void;
   onImportScan: () => void;
   onExportJson: () => void;
@@ -45,6 +46,7 @@ export function AppHeader({
   canUndo,
   canRedo,
   onProjectNameChange,
+  onGoHome,
   onImport,
   onImportScan,
   onExportJson,
@@ -63,11 +65,12 @@ export function AppHeader({
 
   return (
     <header className="app-header">
-      <a
+      <button
+        type="button"
         className="brand-block"
-        href="https://welbournesecurity.com"
-        title="Back to welbournesecurity.com"
-        aria-label="Welbourne Security: back to main site"
+        onClick={onGoHome}
+        title="Back to the dashboard"
+        aria-label="Alchemist — back to the dashboard"
       >
         <div className="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" focusable="false">
@@ -83,7 +86,7 @@ export function AppHeader({
           <h1>Welbourne Security</h1>
           <p>Alchemist OT Sandbox</p>
         </div>
-      </a>
+      </button>
 
       <div className="project-controls">
         <label className="project-name-field">

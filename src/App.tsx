@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { sampleProject, blankProject } from "./data/sampleProject";
+import { blankProject } from "./data/sampleProject";
 import { scenarios } from "./data/scenarios";
 import { getAssetType } from "./data/catalog";
 import {
@@ -14,6 +14,7 @@ import {
 import { findReachability } from "./engine/reachability";
 import { assessProject } from "./engine/scoring";
 import { parseProjectJson, serializeProject } from "./engine/serialization";
+import { loadStoredProject, writeStoredProject } from "./lib/projectStorage";
 import { downloadJson, downloadTopologySvg } from "./lib/exporters";
 import type {
   Asset,
@@ -54,23 +55,20 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { usePanelLayout } from "./hooks/usePanelLayout";
 import { useToasts } from "./hooks/useToasts";
 
-const STORAGE_KEY = "alchemist-ot-sandbox-project";
 const HISTORY_LIMIT = 30;
 
 function cloneProject(project: OtProject): OtProject {
   return JSON.parse(JSON.stringify(project)) as OtProject;
 }
 
-function loadStoredProject(): OtProject {
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return cloneProject(sampleProject);
-  }
-  const parsed = parseProjectJson(stored);
-  return parsed.ok ? parsed.project : cloneProject(sampleProject);
+interface AppProps {
+  onGoHome: () => void;
+  initialIntent?: "reference" | "methodology";
+  theme: "dark" | "light";
+  onToggleTheme: () => void;
 }
 
-export function App() {
+export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps) {
   const [project, setProject] = useState<OtProject>(() => loadStoredProject());
   const [history, setHistory] = useState<OtProject[]>([]);
   const [future, setFuture] = useState<OtProject[]>([]);
@@ -81,13 +79,6 @@ export function App() {
   const [connectMode, setConnectMode] = useState(false);
   const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
   const [activeFindingId, setActiveFindingId] = useState<string | null>(null);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    const stored = window.localStorage.getItem("ot-sandbox-theme");
-    if (stored === "dark" || stored === "light") {
-      return stored;
-    }
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-  });
   const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; label: string } | null>(null);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -115,13 +106,19 @@ export function App() {
   const highlightedConduitIds = activeFinding?.affectedConduitIds.length ? activeFinding.affectedConduitIds : reachability.pathConduitIds;
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, serializeProject(project));
+    writeStoredProject(project);
   }, [project]);
 
+  // Open the requested surface when the dashboard launches into a specific intent.
   useEffect(() => {
-    document.body.classList.toggle("light-mode", theme === "light");
-    window.localStorage.setItem("ot-sandbox-theme", theme);
-  }, [theme]);
+    if (initialIntent === "reference") {
+      setKnowledgeBaseOpen(true);
+    } else if (initialIntent === "methodology") {
+      setMethodologyOpen(true);
+    }
+    // Run once on mount for the entry intent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!project.assets.some((asset) => asset.id === reachSourceId)) {
@@ -596,7 +593,8 @@ export function App() {
       { id: "knowledge", label: "Open knowledge base…", hint: "Reference", run: () => setKnowledgeBaseOpen(true) },
       { id: "methodology", label: "How Alchemist assesses…", hint: "Method", run: () => setMethodologyOpen(true) },
       { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
-      { id: "theme", label: "Toggle light / dark theme", run: () => setTheme((current) => (current === "dark" ? "light" : "dark")) },
+      { id: "theme", label: "Toggle light / dark theme", run: onToggleTheme },
+      { id: "home", label: "Back to dashboard", hint: "Home", run: onGoHome },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },
       { id: "dock", label: layout.dockOpen ? "Collapse analysis dock" : "Expand analysis dock", run: toggleDock },
       { id: "shortcuts", label: "Show keyboard shortcuts", hint: "?", run: () => setShortcutsOpen(true) },
@@ -645,7 +643,9 @@ export function App() {
     undo,
     redo,
     duplicateSelected,
-    selectedAsset
+    selectedAsset,
+    onToggleTheme,
+    onGoHome
   ]);
 
   return (
@@ -673,7 +673,8 @@ export function App() {
           onNewBlank={handleNewBlank}
           onUndo={undo}
           onRedo={redo}
-          onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+          onToggleTheme={onToggleTheme}
+          onGoHome={onGoHome}
         />
 
         <section
