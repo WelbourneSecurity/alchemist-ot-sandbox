@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  Compass,
   Copy,
   FilePlus2,
   Flame,
@@ -37,7 +38,7 @@ import { blankProject } from "../data/sampleProject";
 import { scenarios } from "../data/scenarios";
 import type { OtProject } from "../models/types";
 
-export type DashboardIntent = "reference" | "methodology";
+export type DashboardIntent = "reference" | "methodology" | "tour";
 
 interface DashboardProps {
   onEnter: (intent?: DashboardIntent) => void;
@@ -300,6 +301,10 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
         <button type="button" className="text-button" onClick={() => onEnter("methodology")}>
           <ScrollText size={15} aria-hidden="true" />
           How it assesses
+        </button>
+        <button type="button" className="text-button" onClick={() => onEnter("tour")}>
+          <Compass size={15} aria-hidden="true" />
+          Take a tour
         </button>
         <button type="button" className="text-button" onClick={() => onEnter()}>
           <LayoutGrid size={15} aria-hidden="true" />
