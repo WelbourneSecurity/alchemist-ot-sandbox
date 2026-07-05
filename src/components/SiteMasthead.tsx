@@ -34,17 +34,18 @@ export function SiteMasthead({ theme, onToggleTheme }: SiteMastheadProps) {
       </a>
       <div className="header-actions">
         <nav className="site-nav" aria-label="Primary navigation">
-          {NAV_LINKS.map((link) =>
-            link.current ? (
-              <span key={link.label} className="is-current" aria-current="page">
-                {link.label}
-              </span>
-            ) : (
-              <a key={link.label} href={link.href}>
-                {link.label}
-              </a>
-            )
-          )}
+          {NAV_LINKS.map((link) => (
+            // Keep the current item an anchor (matching the main site) so it
+            // still renders as a cell in the mobile bottom nav bar.
+            <a
+              key={link.label}
+              href={link.href}
+              className={link.current ? "is-current" : undefined}
+              aria-current={link.current ? "page" : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
         <button
           type="button"

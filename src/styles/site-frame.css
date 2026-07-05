@@ -5,6 +5,7 @@
 .site-frame {
   --content-width: min(1180px, calc(100vw - 2rem));
   --header-height: 5.5rem;
+  --gutter: 1rem;
 }
 
 .site-header {
@@ -202,14 +203,134 @@ body.light-mode .hero-dither {
 }
 
 @media (max-width: 960px) {
-  /* Phones/tablets: drop the primary nav entirely and keep just the brand
-     (which links home) on the left and the theme toggle on the right. */
-  .site-nav {
-    display: none;
+  /* Mobile: reuse the main site's chrome — a compact top header with the brand,
+     and the primary nav collapsed into a fixed bottom nav bar. Driven by the
+     body.mobile-lite class that Root toggles at this same 960px breakpoint. */
+  body.mobile-lite .site-header {
+    position: relative;
+    top: auto;
+    width: var(--content-width);
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    min-height: auto;
+    padding:
+      0.85rem
+      max(var(--gutter), env(safe-area-inset-right))
+      0.8rem
+      max(var(--gutter), env(safe-area-inset-left));
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    backdrop-filter: none;
   }
 
-  .header-actions {
-    justify-content: flex-end;
+  body.light-mode.mobile-lite .site-header {
+    background: #ffffff;
+  }
+
+  body.mobile-lite .brand,
+  body.mobile-lite .brand-copy {
+    min-width: 0;
+  }
+
+  body.mobile-lite .brand-copy strong {
+    font-size: 0.82rem;
+  }
+
+  body.mobile-lite .brand-copy small {
+    font-size: 0.74rem;
+  }
+
+  body.mobile-lite .header-actions {
+    position: fixed;
+    right: max(0.85rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: max(0.85rem, env(safe-area-inset-left));
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: auto;
+    margin-left: 0;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid rgba(185, 197, 201, 0.2);
+    border-radius: 0;
+    background: var(--bg);
+    box-shadow: 0 -18px 46px rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+  }
+
+  body.light-mode.mobile-lite .header-actions {
+    border-color: rgba(36, 62, 87, 0.16);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -18px 42px rgba(16, 32, 47, 0.18);
+  }
+
+  body.mobile-lite .site-nav {
+    position: static;
+    display: contents;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.mobile-lite .site-nav a,
+  body.mobile-lite .header-actions .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.85rem;
+    padding: 0 0.45rem;
+    border: 0;
+    border-radius: 0;
+    color: var(--muted);
+    font-size: clamp(0.72rem, 2.7vw, 0.82rem);
+    font-weight: 600;
+    line-height: 1.1;
+    text-align: center;
+    background: transparent;
+    box-shadow: inset -1px 0 0 var(--line), inset 0 -1px 0 var(--line);
+    transform: none;
+  }
+
+  body.mobile-lite .site-nav a + a {
+    border-left: 0;
+  }
+
+  /* Toggle takes its own full-width row so the six links form two clean rows. */
+  body.mobile-lite .header-actions .theme-toggle {
+    grid-column: 1 / -1;
+  }
+
+  body.mobile-lite .site-nav a:hover,
+  body.mobile-lite .site-nav a:focus-visible,
+  body.mobile-lite .header-actions .theme-toggle:hover,
+  body.mobile-lite .header-actions .theme-toggle:focus-visible {
+    color: var(--text);
+    background: #151a1e;
+    border-color: transparent;
+    transform: none;
+  }
+
+  body.light-mode.mobile-lite .site-nav a:hover,
+  body.light-mode.mobile-lite .site-nav a:focus-visible,
+  body.light-mode.mobile-lite .header-actions .theme-toggle:hover,
+  body.light-mode.mobile-lite .header-actions .theme-toggle:focus-visible {
+    background: #eef4f8;
+  }
+
+  body.mobile-lite .site-nav a.is-active,
+  body.mobile-lite .site-nav a[aria-current="page"] {
+    color: var(--accent-ink);
+    background: var(--accent);
+  }
+
+  /* Clear the fixed bottom bar so the hero + note never sit underneath it. */
+  body.mobile-lite .dashboard-mobile-gate {
+    padding-bottom: calc(13.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .page-hero {
