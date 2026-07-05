@@ -18,6 +18,18 @@ function readLastView(): AppView | null {
   return stored === "home" || stored === "app" ? stored : null;
 }
 
+/** Tracks whether the viewport is phone/tablet-sized. The workbench is desktop-only. */
+function useIsMobile(query = "(max-width: 960px)"): boolean {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setIsMobile(mql.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [query]);
+  return isMobile;
+}
+
 /**
  * Top-level shell: the home dashboard or the workbench. The hash deep-links each (`#home` / `#app`),
  * a reload returns to the last view, and the dashboard is the default front door. Owns the theme so
@@ -27,6 +39,7 @@ export function Root() {
   const [view, setView] = useState<AppView>(() => initialView(window.location.hash, readLastView()));
   const [intent, setIntent] = useState<DashboardIntent | undefined>(undefined);
   const [theme, setTheme] = useState<"dark" | "light">(() => initialTheme());
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.body.classList.toggle("light-mode", theme === "light");
@@ -63,8 +76,10 @@ export function Root() {
     }
   }, []);
 
-  if (view === "home") {
-    return <Dashboard onEnter={enter} theme={theme} onToggleTheme={toggleTheme} />;
+  // The workbench is desktop-only: on phone/tablet always show the dashboard's
+  // hero gate, regardless of the hash or the last-viewed state.
+  if (isMobile || view === "home") {
+    return <Dashboard onEnter={enter} theme={theme} onToggleTheme={toggleTheme} isMobile={isMobile} />;
   }
 
   return <App onGoHome={goHome} initialIntent={intent} theme={theme} onToggleTheme={toggleTheme} />;
