@@ -7,7 +7,7 @@ import {
   ASSET_NODE_WIDTH,
   assetYForZone,
   inferZoneFromY,
-  layoutBySubnet,
+  layoutTiered,
   resolveFreePosition,
   snapToGrid
 } from "./data/canvasLayout";
@@ -366,7 +366,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
 
   const autoArrangeLayout = useCallback(() => {
     commitProject((current) => {
-      const positions = layoutBySubnet(current.assets, current.subnets ?? []);
+      const positions = layoutTiered(current.assets, current.subnets ?? [], current.conduits);
       return {
         ...current,
         assets: current.assets.map((asset) => ({ ...asset, position: positions.get(asset.id) ?? asset.position }))
@@ -374,18 +374,19 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
     });
     setLayoutMode("network");
     setFitSignal((value) => value + 1);
-    pushToast("Arranged into subnet columns", "info");
+    pushToast("Auto-arranged the topology", "info");
   }, [commitProject, pushToast, setLayoutMode]);
 
   const applyImport = useCallback(
     (result: AssembledTopology, mode: "replace" | "merge") => {
       commitProject((current) => {
         if (mode === "replace") {
+          const positions = layoutTiered(result.assets, result.subnets, result.conduits);
           return {
             ...cloneProject(blankProject),
             id: makeId("project"),
             name: "Imported topology",
-            assets: result.assets,
+            assets: result.assets.map((asset) => ({ ...asset, position: positions.get(asset.id) ?? asset.position })),
             conduits: result.conduits,
             subnets: result.subnets,
             updatedAt: new Date().toISOString()
@@ -507,7 +508,12 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
 
   const loadScenario = useCallback(
     (scenarioProject: OtProject) => {
-      commitProject(cloneProject(scenarioProject));
+      // Scenarios land pre-arranged by the conduit-aware layout so the first
+      // impression is a tidy architecture diagram, not the authored scatter.
+      const arranged = cloneProject(scenarioProject);
+      const positions = layoutTiered(arranged.assets, arranged.subnets ?? [], arranged.conduits);
+      arranged.assets = arranged.assets.map((asset) => ({ ...asset, position: positions.get(asset.id) ?? asset.position }));
+      commitProject(arranged);
       setSelectedId(null);
       setLayoutMode("network");
       setFitSignal((value) => value + 1);
@@ -615,7 +621,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
       { id: "knowledge", label: "Open knowledge base…", hint: "Reference", run: () => setKnowledgeBaseOpen(true) },
       { id: "methodology", label: "How Alchemist assesses…", hint: "Method", run: () => setMethodologyOpen(true) },
       { id: "tour", label: "Take the guided tour", hint: "Help", run: () => setTourOpen(true) },
-      { id: "arrange", label: "Arrange into subnet columns", run: autoArrangeLayout },
+      { id: "arrange", label: "Auto-arrange topology", run: autoArrangeLayout },
       { id: "theme", label: "Toggle light / dark theme", run: onToggleTheme },
       { id: "home", label: "Back to dashboard", hint: "Home", run: onGoHome },
       { id: "palette", label: layout.paletteOpen ? "Collapse asset palette" : "Expand asset palette", run: togglePalette },

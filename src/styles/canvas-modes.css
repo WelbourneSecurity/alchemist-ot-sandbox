@@ -82,6 +82,29 @@
   text-transform: uppercase;
 }
 
+/* Ghost variant: faint Purdue tier washes behind the free network layout. The y axis
+   already encodes the tier there, so make it legible without switching projections. */
+.zone-band-node.is-ghost {
+  border-top: 1px dashed color-mix(in srgb, var(--zone-band-color) 20%, var(--line));
+  border-bottom: none;
+  background: color-mix(in srgb, var(--zone-band-color) 4%, transparent);
+}
+
+.zone-band-node.is-ghost::before {
+  border-right: 1px solid color-mix(in srgb, var(--zone-band-color) 34%, var(--line));
+  background: none;
+}
+
+.zone-band-node.is-ghost strong {
+  font-size: 0.82rem;
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+}
+
+.zone-band-node.is-ghost span {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
 /* Subnet containers — labelled grouping boxes behind the nodes in the network layout. */
 .subnet-layer {
   position: absolute;
