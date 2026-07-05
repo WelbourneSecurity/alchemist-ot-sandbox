@@ -45,7 +45,9 @@
 }
 
 .brand-block:hover .brand-mark,
-.brand-block:focus-visible .brand-mark {
+.brand-block:focus-visible .brand-mark,
+.brand:hover .brand-mark,
+.brand:focus-visible .brand-mark {
   border-color: var(--accent);
 }
 
@@ -58,39 +60,88 @@
   height: 2.75rem;
   flex: 0 0 auto;
   border: 1px solid var(--line-strong);
-  border-radius: 50%;
   color: var(--accent);
   background: transparent;
+  transition: border-color 180ms ease;
 }
 
 .brand-mark svg {
   display: block;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 1.9rem;
+  height: 1.9rem;
   overflow: visible;
 }
 
-.brand-mark circle,
-.brand-mark path {
+.brand-mark .brand-radar-ring {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.6;
+  stroke-width: 1.5;
+  opacity: 0.95;
 }
 
-.brand-mark-grid {
-  opacity: 0.28;
+.brand-mark .brand-radar-ring-inner {
   stroke-width: 1.2;
+  opacity: 0.45;
 }
 
-.brand-mark-core {
-  fill: currentColor !important;
-  stroke: none !important;
+.brand-mark .brand-radar-grid {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.2;
 }
 
-.brand-mark-sweep {
+.brand-mark .brand-radar-core {
+  fill: currentColor;
+}
+
+.brand-mark .brand-radar-beam {
+  fill: none;
+  stroke: var(--accent-blue);
+  stroke-width: 2;
   stroke-linecap: round;
-  opacity: 0.9;
-  stroke-width: 2.2;
+}
+
+.brand-mark .brand-radar-trail {
+  fill: var(--accent-blue);
+}
+
+.brand-mark .brand-radar-blip {
+  fill: var(--signal);
+}
+
+.brand-mark .brand-radar-sweep {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+@keyframes brand-radar-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes brand-radar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand-mark .brand-radar-blip {
+    animation: brand-radar-pulse 2.6s ease-in-out infinite;
+  }
+
+  .brand-block:hover .brand-radar-sweep,
+  .brand-block:focus-visible .brand-radar-sweep,
+  .brand:hover .brand-radar-sweep,
+  .brand:focus-visible .brand-radar-sweep {
+    animation: brand-radar-spin 3.2s linear infinite;
+  }
 }
 
 .brand-block h1 {
