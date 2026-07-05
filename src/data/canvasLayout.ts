@@ -4,7 +4,7 @@ import type { Point, Subnet, ZoneId } from "../models/types";
 export const ZONE_ROW_HEIGHT = 118;
 export const ZONE_BAND_Y_OFFSET = -18;
 export const ZONE_BAND_HEIGHT = 104;
-export const ASSET_NODE_WIDTH = 196;
+export const ASSET_NODE_WIDTH = 212;
 export const ASSET_NODE_HEIGHT = 96;
 export const DEFAULT_VIEWPORT = { x: 210, y: 58, zoom: 0.74 };
 export const CANVAS_GRID_X = 48;

@@ -132,11 +132,14 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
     >
       <Handle id="in" type="target" position={Position.Left} className="flow-handle" />
       <Handle id="out" type="source" position={Position.Right} className="flow-handle" />
-      <div className="asset-node-icon">
-        <AssetGlyph icon={type.icon} size={19} />
-      </div>
-      <div className="asset-node-body">
-        <div className="asset-node-titlerow">
+      <span className="asset-node-zone" title={`${zone.levelLabel}: ${zone.name}`}>
+        {zone.shortName}
+      </span>
+      <div className="asset-node-head">
+        <div className="asset-node-icon">
+          <AssetGlyph icon={type.icon} size={18} />
+        </div>
+        <div className="asset-node-heading">
           {editing ? (
             <input
               className="nodrag asset-node-rename"
@@ -158,7 +161,8 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
             />
           ) : (
             <strong
-              title="Double-click to rename"
+              className="asset-node-name"
+              title={`${data.asset.name} — double-click to rename`}
               onDoubleClick={(event) => {
                 event.stopPropagation();
                 setDraft(data.asset.name);
@@ -168,23 +172,22 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
               {data.asset.name}
             </strong>
           )}
-          <span className="asset-node-zone" title={`${zone.levelLabel}: ${zone.name}`}>
-            {zone.shortName}
+          <span className="asset-node-type">{type.label}</span>
+        </div>
+      </div>
+      <div className="asset-node-foot">
+        <small className="asset-node-addr" title={data.asset.ipAddress || data.asset.vlan || "No address set"}>
+          {data.asset.ipAddress || data.asset.vlan || "no address"}
+        </small>
+        {badges.length > 0 ? (
+          <span className="asset-node-badges">
+            {badges.map((badge) => (
+              <span key={badge.key} className={`asset-badge tone-${badge.tone}`} title={badge.title}>
+                {badge.label}
+              </span>
+            ))}
           </span>
-        </div>
-        <span className="asset-node-type">{type.label}</span>
-        <div className="asset-node-foot">
-          <small>{data.asset.ipAddress || data.asset.vlan || "no address"}</small>
-          {badges.length > 0 ? (
-            <span className="asset-node-badges">
-              {badges.map((badge) => (
-                <span key={badge.key} className={`asset-badge tone-${badge.tone}`} title={badge.title}>
-                  {badge.label}
-                </span>
-              ))}
-            </span>
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </div>
   );

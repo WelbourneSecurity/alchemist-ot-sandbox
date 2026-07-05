@@ -1,23 +1,32 @@
 .asset-node {
   position: relative;
-  width: 12.25rem;
+  width: 13.25rem;
   min-height: 6rem;
-  display: grid;
-  grid-template-columns: 2.3rem 1fr;
-  gap: 0.62rem;
-  align-items: stretch;
-  padding: 0.62rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.6rem;
   border: 1px solid color-mix(in srgb, var(--text) 22%, var(--line-strong));
-  border-left: 4px solid var(--zone-color);
+  border-left: 3px solid var(--zone-color);
   border-radius: 0;
   color: var(--text);
-  background: color-mix(in srgb, var(--surface) 96%, var(--zone-color));
+  /* Two-stop wash bleeding from the accented left edge to the panel surface — gives the
+     flat card depth without a shadow, and keeps the zone colour reading as data. */
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--surface) 85%, var(--zone-color)) 0%,
+    color-mix(in srgb, var(--surface) 96%, var(--zone-color)) 52%
+  );
   box-shadow: none;
-  transition: border-color 140ms ease, background-color 140ms ease;
+  transition: border-color 140ms ease, background 140ms ease;
 }
 
 body.light-mode .asset-node {
-  background: color-mix(in srgb, #fafaf8 92%, var(--zone-color));
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, #fafaf8 82%, var(--zone-color)) 0%,
+    color-mix(in srgb, #fafaf8 94%, var(--zone-color)) 52%
+  );
   border-color: rgba(22, 24, 26, 0.36);
 }
 
@@ -72,15 +81,24 @@ body.light-mode .asset-node {
   outline-offset: 2px;
 }
 
+.asset-node-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  /* Reserve room for the absolutely-positioned zone chip so the name never runs under it. */
+  padding-right: 1.9rem;
+}
+
 .asset-node-icon {
-  width: 2.3rem;
-  height: 2.3rem;
-  align-self: start;
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
   display: grid;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--zone-color) 42%, var(--line));
   color: color-mix(in srgb, var(--text) 72%, var(--zone-color));
-  background: color-mix(in srgb, var(--zone-color) 10%, transparent);
+  background: color-mix(in srgb, var(--zone-color) 12%, transparent);
 }
 
 .asset-node.is-highlighted .asset-node-icon {
@@ -88,55 +106,52 @@ body.light-mode .asset-node {
   border-color: color-mix(in srgb, var(--signal) 60%, var(--line));
 }
 
-.asset-node-body {
+.asset-node-heading {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.16rem;
+  gap: 0.12rem;
+  padding-top: 0.05rem;
 }
 
-.asset-node-titlerow {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-}
-
-.asset-node-titlerow strong {
-  flex: 1;
-  min-width: 0;
+.asset-node-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.18;
 }
 
 .asset-node-zone {
-  flex: none;
-  padding: 0.02rem 0.34rem;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.04rem 0.32rem;
   border: 1px solid color-mix(in srgb, var(--zone-color) 55%, var(--line-strong));
-  background: color-mix(in srgb, var(--zone-color) 16%, transparent);
-  color: color-mix(in srgb, var(--text) 78%, var(--zone-color));
+  background: color-mix(in srgb, var(--zone-color) 20%, var(--surface));
+  color: color-mix(in srgb, var(--text) 80%, var(--zone-color));
   font-family: var(--font-display);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .asset-node-rename {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   border: 1px solid var(--accent);
   border-radius: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.15;
-  padding: 0.02rem 0.2rem;
+  line-height: 1.18;
+  padding: 0.05rem 0.2rem;
   outline: none;
 }
 
@@ -145,7 +160,7 @@ body.light-mode .asset-node {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -157,31 +172,36 @@ body.light-mode .asset-node {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
-  padding-top: 0.18rem;
-  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  padding-top: 0.34rem;
+  border-top: 1px solid color-mix(in srgb, var(--zone-color) 20%, var(--line));
 }
 
-.asset-node-foot small {
+.asset-node-addr {
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .asset-node-badges {
   flex: none;
   display: inline-flex;
-  gap: 0.22rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  max-width: 55%;
 }
 
 .asset-badge {
-  padding: 0.02rem 0.26rem;
+  padding: 0.04rem 0.28rem;
   border: 1px solid var(--line-strong);
   color: var(--muted);
   font-family: var(--font-display);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
