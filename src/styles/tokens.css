@@ -31,6 +31,8 @@
   --accent: #e9ebe8;
   --accent-ink: #0a0b0c;
   --accent-soft: rgba(233, 235, 232, 0.08);
+  /* Monochrome sweep colour for the radar brand mark (matches the CTF archive). */
+  --accent-blue: #aab3b8;
   --signal: #e5484d;
   --danger: #e5484d;
 
@@ -85,6 +87,7 @@ body.light-mode {
   --accent: #16181a;
   --accent-ink: #fafaf8;
   --accent-soft: rgba(22, 24, 26, 0.06);
+  --accent-blue: #5d6469;
   --signal: #c4373b;
   --danger: #c4373b;
 }
