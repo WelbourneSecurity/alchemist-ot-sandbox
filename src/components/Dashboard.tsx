@@ -131,7 +131,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
               <h1>Model, assess and harden OT network architecture.</h1>
               <p className="page-hero-lede">
                 Build Purdue-zoned topologies, test reachability across trust boundaries, and score
-                segmentation against IEC 62443 and the NCSC CAF — entirely in the browser.
+                segmentation against IEC 62443 and the NCSC CAF, entirely in the browser.
               </p>
               <p className="mobile-gate-note">
                 Alchemist is a desktop workbench. Open it on a larger screen to build and score OT
@@ -156,7 +156,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
             <h1>Model, assess and harden OT network architecture.</h1>
             <p className="page-hero-lede">
               Build Purdue-zoned topologies, test reachability across trust boundaries, and score segmentation against
-              IEC 62443 and the NCSC CAF — entirely in the browser.
+              IEC 62443 and the NCSC CAF, entirely in the browser.
             </p>
             <div className="dashboard-cta">
               <button type="button" className="text-button primary" onClick={() => onEnter()}>
