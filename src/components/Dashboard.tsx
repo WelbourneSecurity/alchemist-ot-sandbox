@@ -44,6 +44,8 @@ interface DashboardProps {
   onEnter: (intent?: DashboardIntent) => void;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  /** On phone/tablet the workbench is unavailable; the dashboard renders a hero-only gate. */
+  isMobile?: boolean;
 }
 
 /**
@@ -51,7 +53,7 @@ interface DashboardProps {
  * the assessment engines and the VerdictBanner hero, with a scenario picker and entry CTAs into the
  * workbench. Loading a scenario writes it to storage; the workbench reads the same slot on entry.
  */
-export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
+export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: DashboardProps) {
   const [project, setProject] = useState<OtProject>(() => loadStoredProject());
   const [projects, setProjects] = useState(() => listProjects());
   const [currentId, setCurrentId] = useState(() => getCurrentProjectId());
@@ -114,6 +116,33 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
   useEffect(() => {
     initHeroDither();
   }, []);
+
+  // Phone/tablet gate: the workbench needs a desktop-sized canvas, so on small
+  // screens we show only the masthead + hero with a "use a larger screen" note.
+  if (isMobile) {
+    return (
+      <div className="dashboard site-frame dashboard-mobile-gate">
+        <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} />
+        <section className="page-hero hero-cta">
+          <div className="hero-card">
+            <canvas className="hero-dither" aria-hidden="true" />
+            <div className="hero-copy">
+              <p className="eyebrow">OT security sandbox</p>
+              <h1>Model, assess and harden OT network architecture.</h1>
+              <p className="page-hero-lede">
+                Build Purdue-zoned topologies, test reachability across trust boundaries, and score
+                segmentation against IEC 62443 and the NCSC CAF — entirely in the browser.
+              </p>
+              <p className="mobile-gate-note">
+                Alchemist is a desktop workbench. Open it on a larger screen to build and score OT
+                networks.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard site-frame">
