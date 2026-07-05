@@ -144,6 +144,52 @@
   line-height: 1.5;
 }
 
+/* Dithering hero card, mirrored from the main site: one hard-edged surface
+   holding a WebGL ordered-dither warp field (lib/heroDither.ts) behind the
+   copy. Sharp corners + hairline border keep the app's flat brand. */
+.page-hero.hero-cta {
+  padding: 2.5rem 0 3rem;
+}
+
+.hero-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: min(32rem, 66svh);
+  padding: clamp(3rem, 7vh, 4.5rem) clamp(1.5rem, 4vw, 3.5rem);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* WebGL warp field: cobalt on the dark theme, amber on paper. Explicit colours
+   (not a token) so the field stays blue while the app chrome stays monochrome.
+   Opacity/blend live here; heroDither reads this `color` for the field tint. */
+.hero-dither {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  color: #5b8cff;
+  opacity: 0.4;
+  mix-blend-mode: screen;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+body.light-mode .hero-dither {
+  color: #ec4e02;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+.hero-card .hero-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 46rem;
+}
+
 @media (max-width: 960px) {
   .site-header {
     flex-direction: column;

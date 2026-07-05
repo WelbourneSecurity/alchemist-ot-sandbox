@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { SiteMasthead } from "./SiteMasthead";
 import { VerdictBanner } from "./VerdictBanner";
+import { initHeroDither } from "../lib/heroDither";
 import { assessProject } from "../engine/scoring";
 import { assessSecurityLevels } from "../engine/securityLevels";
 import { assessRisk, countHighRisk } from "../engine/risk";
@@ -109,26 +110,36 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
     refresh();
   };
 
+  // Start the shared WebGL dither field behind the hero (matches the main site).
+  useEffect(() => {
+    initHeroDither();
+  }, []);
+
   return (
     <div className="dashboard site-frame">
       <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} />
 
-      <section className="page-hero">
-        <p className="eyebrow">OT security sandbox</p>
-        <h1>Model, assess and harden OT network architecture.</h1>
-        <p className="page-hero-lede">
-          Build Purdue-zoned topologies, test reachability across trust boundaries, and score segmentation against
-          IEC 62443 and the NCSC CAF — entirely in the browser.
-        </p>
-        <div className="dashboard-cta">
-          <button type="button" className="text-button primary" onClick={() => onEnter()}>
-            Open workbench
-            <ArrowRight size={16} aria-hidden="true" />
-          </button>
-          <button type="button" className="text-button" onClick={() => load(blankProject)}>
-            <FilePlus2 size={15} aria-hidden="true" />
-            New blank
-          </button>
+      <section className="page-hero hero-cta">
+        <div className="hero-card">
+          <canvas className="hero-dither" aria-hidden="true" />
+          <div className="hero-copy">
+            <p className="eyebrow">OT security sandbox</p>
+            <h1>Model, assess and harden OT network architecture.</h1>
+            <p className="page-hero-lede">
+              Build Purdue-zoned topologies, test reachability across trust boundaries, and score segmentation against
+              IEC 62443 and the NCSC CAF — entirely in the browser.
+            </p>
+            <div className="dashboard-cta">
+              <button type="button" className="text-button primary" onClick={() => onEnter()}>
+                Open workbench
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+              <button type="button" className="text-button" onClick={() => load(blankProject)}>
+                <FilePlus2 size={15} aria-hidden="true" />
+                New blank
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
