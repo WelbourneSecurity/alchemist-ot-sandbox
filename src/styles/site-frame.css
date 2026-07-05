@@ -1,0 +1,166 @@
+/* Shared Welbourne Security site frame, mirrored from the main site (welbournesecurity.com)
+   so the Alchemist landing opens in the same familiar shell: sticky header, radar brand,
+   primary nav, and a large page-hero band. Reuses the app's existing --accent / --muted /
+   --line-strong / --signal brand tokens and the .brand-mark + .theme-toggle rules. */
+.site-frame {
+  --content-width: min(1180px, calc(100vw - 2rem));
+  --header-height: 5.5rem;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 20);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: var(--content-width);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  padding: 1rem 0.45rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.site-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+.site-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.brand-copy strong {
+  font-size: 0.95rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.brand-copy small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.site-nav a,
+.site-nav .is-current {
+  position: relative;
+  padding-bottom: 0.15rem;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-nav .is-current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.site-nav a::after,
+.site-nav .is-current::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 180ms ease;
+}
+
+.site-nav .is-current::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.site-nav a:hover::after,
+.site-nav a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Large familiar hero band beneath the header. */
+.page-hero {
+  width: var(--content-width);
+  margin: 0 auto;
+  padding: 5.5rem 0 3rem;
+}
+
+.page-hero .eyebrow {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.page-hero h1 {
+  max-width: 52rem;
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 6vw, 4.75rem);
+  line-height: 0.98;
+}
+
+.page-hero-lede {
+  max-width: 42rem;
+  margin: 1.35rem 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 960px) {
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .site-nav {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+
+  .page-hero {
+    padding: 3.5rem 0 2rem;
+  }
+}

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Check,
   Compass,
@@ -10,15 +9,14 @@ import {
   Flame,
   Layers,
   LayoutGrid,
-  Moon,
   Pencil,
   Scale,
   ScrollText,
-  Sun,
   Trash2,
   Waypoints,
   X
 } from "lucide-react";
+import { SiteMasthead } from "./SiteMasthead";
 import { VerdictBanner } from "./VerdictBanner";
 import { assessProject } from "../engine/scoring";
 import { assessSecurityLevels } from "../engine/securityLevels";
@@ -112,46 +110,33 @@ export function Dashboard({ onEnter, theme, onToggleTheme }: DashboardProps) {
   };
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-top">
-        <div className="dashboard-brand">
-          <div>
-            <strong>Alchemist</strong>
-            <span>OT security workbench</span>
-          </div>
-        </div>
-        <div className="dashboard-top-actions">
-          <a className="dashboard-mainlink" href="https://welbournesecurity.com" title="Back to the main Welbourne Security site">
-            <ArrowUpRight size={15} aria-hidden="true" />
-            welbournesecurity.com
-          </a>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={onToggleTheme}
-            aria-label="Toggle light and dark mode"
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          >
-            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+    <div className="dashboard site-frame">
+      <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} />
+
+      <section className="page-hero">
+        <p className="eyebrow">OT security sandbox</p>
+        <h1>Model, assess and harden OT network architecture.</h1>
+        <p className="page-hero-lede">
+          Build Purdue-zoned topologies, test reachability across trust boundaries, and score segmentation against
+          IEC 62443 and the NCSC CAF — entirely in the browser.
+        </p>
+        <div className="dashboard-cta">
+          <button type="button" className="text-button primary" onClick={() => onEnter()}>
+            Open workbench
+            <ArrowRight size={16} aria-hidden="true" />
+          </button>
+          <button type="button" className="text-button" onClick={() => load(blankProject)}>
+            <FilePlus2 size={15} aria-hidden="true" />
+            New blank
           </button>
         </div>
-      </header>
+      </section>
 
       <section className="dashboard-hero">
         <div className="dashboard-hero-main">
           <p className="dashboard-eyebrow">Current assessment</p>
-          <h1>{project.name}</h1>
+          <h2>{project.name}</h2>
           <VerdictBanner assessment={assessment} />
-          <div className="dashboard-cta">
-            <button type="button" className="text-button primary" onClick={() => onEnter()}>
-              Open workbench
-              <ArrowRight size={16} aria-hidden="true" />
-            </button>
-            <button type="button" className="text-button" onClick={() => load(blankProject)}>
-              <FilePlus2 size={15} aria-hidden="true" />
-              New blank
-            </button>
-          </div>
         </div>
         <aside className="dashboard-stats" aria-label="Model size">
           <div className="dash-stat">
