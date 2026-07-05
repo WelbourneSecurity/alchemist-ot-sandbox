@@ -14,8 +14,7 @@ const NAV_LINKS: Array<{ label: string; href: string; current?: boolean }> = [
   { label: "Writeups", href: `${SITE}/writeups/` },
   { label: "Past CTFs", href: "https://ctf.welbournesecurity.com/" },
   { label: "Alchemist", href: "https://alchemist.welbournesecurity.com/", current: true },
-  { label: "Blue Team", href: `${SITE}/blue-team/` },
-  { label: "Contact", href: `${SITE}/#contact` }
+  { label: "Blue Team", href: `${SITE}/blue-team/` }
 ];
 
 interface SiteMastheadProps {

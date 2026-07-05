@@ -209,4 +209,23 @@ body.light-mode .hero-dither {
   .page-hero {
     padding: 3.5rem 0 2rem;
   }
+
+  /* Compact the dithering hero on phones so the header + hero fit one screen
+     instead of the desktop 66svh card. */
+  .page-hero.hero-cta {
+    padding: 1.5rem 0 2rem;
+  }
+
+  .hero-card {
+    min-height: clamp(18rem, 52svh, 23rem);
+    padding: clamp(1.9rem, 6svh, 2.8rem) 1.25rem;
+  }
+
+  .page-hero h1 {
+    font-size: clamp(2rem, 7.5vw, 2.6rem);
+  }
+
+  .page-hero-lede {
+    font-size: 0.96rem;
+  }
 }

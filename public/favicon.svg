@@ -1,8 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <rect width="48" height="48" fill="#0a0b0c"/>
-  <circle cx="24" cy="24" r="18" fill="none" stroke="#e9ebe8" stroke-width="2"/>
-  <circle cx="24" cy="24" r="11" fill="none" stroke="#e9ebe8" stroke-width="1.4" opacity=".76"/>
-  <path d="M24 6v36M6 24h36" stroke="#e9ebe8" stroke-width="1.2" opacity=".34"/>
-  <path d="M24 6a18 18 0 0 1 18 18" fill="none" stroke="#e5484d" stroke-width="2.6" stroke-linecap="round"/>
-  <circle cx="24" cy="24" r="3.2" fill="#e9ebe8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Welbourne Security favicon">
+  <rect width="64" height="64" fill="#0a0b0c" />
+  <circle cx="32" cy="32" r="25" fill="none" stroke="#e9ebe8" stroke-width="2" opacity="0.95" />
+  <circle cx="32" cy="32" r="15" fill="none" stroke="#e9ebe8" stroke-width="1.5" opacity="0.45" />
+  <path d="M32 7V57M7 32H57" fill="none" stroke="#e9ebe8" stroke-width="1.2" opacity="0.18" />
+  <rect x="44" y="16" width="4" height="4" fill="#5b8cff" opacity="0.7" />
+  <rect x="40" y="20" width="4" height="4" fill="#5b8cff" opacity="0.65" />
+  <rect x="44" y="20" width="4" height="4" fill="#5b8cff" opacity="0.55" />
+  <rect x="48" y="20" width="4" height="4" fill="#5b8cff" opacity="0.45" />
+  <rect x="40" y="24" width="4" height="4" fill="#5b8cff" opacity="0.35" />
+  <rect x="44" y="24" width="4" height="4" fill="#5b8cff" opacity="0.4" />
+  <path d="M32 32L48.1 12.9" stroke="#5b8cff" stroke-width="2.6" stroke-linecap="round" />
+  <circle cx="32" cy="32" r="3.4" fill="#e9ebe8" />
+  <circle cx="52" cy="27.3" r="3.7" fill="#e5484d" />
 </svg>
