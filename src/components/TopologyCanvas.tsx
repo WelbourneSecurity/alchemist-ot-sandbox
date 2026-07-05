@@ -40,6 +40,7 @@ import {
   ZONE_BAND_Y_OFFSET,
   ZONE_ROW_HEIGHT,
   inferZoneFromY,
+  networkTierY,
   projectPurduePositions,
   snapAssetPosition,
   snapToGrid,
@@ -225,6 +226,9 @@ interface ConduitOverlayItem {
   boundaryMarkers: Point[];
   dash?: string;
 }
+
+/** Vertical padding around a network-layout tier so its ghost band clears the node cards. */
+const NETWORK_BAND_PAD = 20;
 
 function assetWithLivePosition(asset: Asset, position: Point, layoutMode: LayoutMode): Asset {
   // In the Purdue projection a node's lane (y) defines its zone, so derive it live while
@@ -740,6 +744,32 @@ function TopologyCanvasInner({
                       {
                         "--zone-band-y": `${index * ZONE_ROW_HEIGHT + ZONE_BAND_Y_OFFSET}px`,
                         "--zone-band-height": `${ZONE_BAND_HEIGHT}px`,
+                        "--zone-band-color": zone.color
+                      } as CSSProperties
+                    }
+                  >
+                    <strong>
+                      {zone.levelLabel} - {zone.shortName}
+                    </strong>
+                    <span>{zone.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!isPurdue ? (
+              <div
+                className="zone-band-layer"
+                aria-hidden="true"
+                style={{ "--zone-band-width": `${contentExtent.bandWidth}px` } as CSSProperties}
+              >
+                {zones.map((zone) => (
+                  <div
+                    className="zone-band-node is-ghost"
+                    key={zone.id}
+                    style={
+                      {
+                        "--zone-band-y": `${networkTierY(zone.id) - NETWORK_BAND_PAD}px`,
+                        "--zone-band-height": `${ASSET_NODE_HEIGHT + NETWORK_BAND_PAD * 2}px`,
                         "--zone-band-color": zone.color
                       } as CSSProperties
                     }

@@ -168,56 +168,192 @@ export function subnetBoundingBoxes(
   });
 }
 
-export const NETWORK_TOP_MARGIN = 64;
-export const NETWORK_TIER_STEP = 170;
+/* All network-layout geometry is a multiple of CANVAS_GRID_X (48) so the canvas's
+   snap-to-grid never nudges a freshly laid-out node — tiers stay exactly on the
+   ghost zone bands. */
+export const NETWORK_TOP_MARGIN = 48;
+export const NETWORK_TIER_STEP = 192;
 export const SUBNET_COLUMN_GAP = 96;
-const NETWORK_COL_STEP = ASSET_NODE_WIDTH + 48;
+const NETWORK_BAND_START_X = 96;
+const NETWORK_COL_STEP = 240;
 
 /** Y for a Purdue zone in the free network layout — generous tiers so subnet boxes clear each other. */
 export function networkTierY(zoneId: ZoneId): number {
   return NETWORK_TOP_MARGIN + zoneIndex(zoneId) * NETWORK_TIER_STEP;
 }
 
+const UNGROUPED_BAND = "__ungrouped__";
+const LAYOUT_SWEEPS = 3;
+
+interface LayoutBand {
+  key: string;
+  /** tier index -> ordered member ids */
+  tiers: Map<number, string[]>;
+  x: number;
+  widthCols: number;
+}
+
 /**
- * Arranges assets into a tidy, readable network map: each subnet becomes its own horizontal
- * column-band (separated by SUBNET_COLUMN_GAP so the containers never touch), and within a band
- * assets are stacked by Purdue level so levels still read as rows. Same-level members in a band
- * spread sideways. Ungrouped assets get a trailing band. Deterministic — used for the bundled
- * presets and the canvas "Arrange" action.
+ * Arranges assets into a tidy, readable network map. Subnets keep exclusive horizontal
+ * column-bands (separated by SUBNET_COLUMN_GAP so the containers never overlap) and Purdue
+ * levels read as rows, but both the band order and the member order within each band tier
+ * are chosen by the conduit graph: repeated barycentre sweeps pull connected assets towards
+ * each other, so conduits run short and straight instead of zig-zagging across the canvas.
+ * Each tier is centred within its band for the natural funnel silhouette. Deterministic —
+ * used for scenario/import loads and the canvas "Arrange" action.
  */
-export function layoutBySubnet(
+export function layoutTiered(
   assets: Array<{ id: string; zone: ZoneId; subnetId?: string }>,
-  subnets: Array<{ id: string }>
+  subnets: Array<{ id: string }>,
+  conduits: Array<{ source: string; target: string }>
 ): Map<string, Point> {
-  const validSubnetIds = new Set(subnets.map((subnet) => subnet.id));
   const positions = new Map<string, Point>();
+  if (assets.length === 0) {
+    return positions;
+  }
 
-  const placeBand = (members: Array<{ id: string; zone: ZoneId }>, startX: number): number => {
-    const zoneTotals = new Map<ZoneId, number>();
-    for (const member of members) {
-      zoneTotals.set(member.zone, (zoneTotals.get(member.zone) ?? 0) + 1);
+  const validSubnetIds = new Set(subnets.map((subnet) => subnet.id));
+  const bandKeyOf = (asset: { subnetId?: string }) =>
+    asset.subnetId && validSubnetIds.has(asset.subnetId) ? asset.subnetId : UNGROUPED_BAND;
+
+  const present = new Set(assets.map((asset) => asset.id));
+  const neighbours = new Map<string, string[]>();
+  const addEdge = (from: string, to: string) => {
+    const list = neighbours.get(from);
+    if (list) {
+      list.push(to);
+    } else {
+      neighbours.set(from, [to]);
     }
-    const widthCols = Math.max(1, ...Array.from(zoneTotals.values()));
-    const ordered = [...members].sort((a, b) => zoneIndex(a.zone) - zoneIndex(b.zone) || (a.id < b.id ? -1 : 1));
-    const perZone = new Map<ZoneId, number>();
-    for (const member of ordered) {
-      const column = perZone.get(member.zone) ?? 0;
-      perZone.set(member.zone, column + 1);
-      positions.set(member.id, { x: startX + column * NETWORK_COL_STEP, y: networkTierY(member.zone) });
-    }
-    return startX + widthCols * NETWORK_COL_STEP + SUBNET_COLUMN_GAP;
   };
+  for (const conduit of conduits) {
+    if (conduit.source === conduit.target || !present.has(conduit.source) || !present.has(conduit.target)) {
+      continue;
+    }
+    addEdge(conduit.source, conduit.target);
+    addEdge(conduit.target, conduit.source);
+  }
 
-  let bandX = ASSET_MIN_X + 40;
+  // Build bands in declared subnet order (refined below), members per tier ordered by id
+  // so the whole layout is deterministic before the first sweep.
+  const bandByAsset = new Map<string, string>();
+  const bandKeys: string[] = [];
   for (const subnet of subnets) {
-    const members = assets.filter((asset) => asset.subnetId === subnet.id);
-    if (members.length > 0) {
-      bandX = placeBand(members, bandX);
+    if (assets.some((asset) => bandKeyOf(asset) === subnet.id)) {
+      bandKeys.push(subnet.id);
     }
   }
-  const ungrouped = assets.filter((asset) => !asset.subnetId || !validSubnetIds.has(asset.subnetId));
-  if (ungrouped.length > 0) {
-    placeBand(ungrouped, bandX);
+  if (assets.some((asset) => bandKeyOf(asset) === UNGROUPED_BAND)) {
+    bandKeys.push(UNGROUPED_BAND);
+  }
+  const bands: LayoutBand[] = bandKeys.map((key) => ({ key, tiers: new Map(), x: 0, widthCols: 1 }));
+  const bandLookup = new Map(bands.map((band) => [band.key, band]));
+  for (const asset of [...assets].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    const key = bandKeyOf(asset);
+    bandByAsset.set(asset.id, key);
+    const band = bandLookup.get(key)!;
+    const tier = zoneIndex(asset.zone);
+    const members = band.tiers.get(tier);
+    if (members) {
+      members.push(asset.id);
+    } else {
+      band.tiers.set(tier, [asset.id]);
+    }
+  }
+
+  const tierY = (tier: number) => NETWORK_TOP_MARGIN + tier * NETWORK_TIER_STEP;
+
+  const assignBandTier = (band: LayoutBand, tier: number) => {
+    const members = band.tiers.get(tier)!;
+    // Centre the tier within its band, rounded to the canvas grid so snapping is a no-op.
+    const centring = ((band.widthCols - members.length) * NETWORK_COL_STEP) / 2;
+    const startX = band.x + Math.round(centring / CANVAS_GRID_X) * CANVAS_GRID_X;
+    members.forEach((id, index) => {
+      positions.set(id, { x: startX + index * NETWORK_COL_STEP, y: tierY(tier) });
+    });
+  };
+
+  const assignAll = () => {
+    let bandX = NETWORK_BAND_START_X;
+    for (const band of bands) {
+      band.widthCols = Math.max(1, ...Array.from(band.tiers.values(), (members) => members.length));
+      band.x = bandX;
+      for (const tier of band.tiers.keys()) {
+        assignBandTier(band, tier);
+      }
+      bandX += band.widthCols * NETWORK_COL_STEP + SUBNET_COLUMN_GAP;
+    }
+  };
+
+  const meanNeighbourX = (id: string): number | null => {
+    const links = neighbours.get(id);
+    if (!links || links.length === 0) {
+      return null;
+    }
+    let sum = 0;
+    for (const other of links) {
+      sum += positions.get(other)!.x;
+    }
+    return sum / links.length;
+  };
+
+  // One down (or up) pass of the classic barycentre heuristic: reorder each tier towards the
+  // mean x of its neighbours, re-assigning that tier's positions immediately so the next tier
+  // in the pass sees the updated coordinates.
+  const sweepMembers = (descending: boolean) => {
+    const tierIndices = [...new Set(bands.flatMap((band) => [...band.tiers.keys()]))].sort((a, b) =>
+      descending ? b - a : a - b
+    );
+    for (const tier of tierIndices) {
+      for (const band of bands) {
+        const members = band.tiers.get(tier);
+        if (!members || members.length < 2) {
+          continue;
+        }
+        const keyed = members.map((id, index) => ({ id, index, key: meanNeighbourX(id) ?? positions.get(id)!.x }));
+        keyed.sort((a, b) => a.key - b.key || a.index - b.index);
+        members.splice(0, members.length, ...keyed.map((item) => item.id));
+        assignBandTier(band, tier);
+      }
+    }
+  };
+
+  // Reorder whole bands by where their external conduits pull them, so heavily linked
+  // subnets sit next to each other (and the ungrouped band lands where it connects).
+  const sweepBands = () => {
+    if (bands.length < 2) {
+      return;
+    }
+    const keyed = bands.map((band, index) => {
+      let sum = 0;
+      let count = 0;
+      let memberSum = 0;
+      let memberCount = 0;
+      for (const members of band.tiers.values()) {
+        for (const id of members) {
+          memberSum += positions.get(id)!.x;
+          memberCount += 1;
+          for (const other of neighbours.get(id) ?? []) {
+            if (bandByAsset.get(other) !== band.key) {
+              sum += positions.get(other)!.x;
+              count += 1;
+            }
+          }
+        }
+      }
+      const centre = memberCount > 0 ? memberSum / memberCount : 0;
+      return { band, index, key: count > 0 ? sum / count : centre };
+    });
+    keyed.sort((a, b) => a.key - b.key || a.index - b.index);
+    bands.splice(0, bands.length, ...keyed.map((item) => item.band));
+  };
+
+  assignAll();
+  for (let sweep = 0; sweep < LAYOUT_SWEEPS; sweep += 1) {
+    sweepMembers(false);
+    sweepMembers(true);
+    sweepBands();
+    assignAll();
   }
 
   return positions;

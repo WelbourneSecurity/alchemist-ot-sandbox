@@ -1,4 +1,4 @@
-import { layoutBySubnet } from "../canvasLayout";
+import { layoutTiered } from "../canvasLayout";
 import type { Asset, AssetTypeId, Conduit, OtProject, ZoneId } from "../../models/types";
 
 /** Metadata wrapper for a ready-to-load scenario shown in the scenario gallery. */
@@ -108,12 +108,12 @@ export function asset(
 }
 
 /**
- * Re-positions a project's assets into the tidy subnet-column network layout. Authored x/y in
- * the scenario files become irrelevant — the layout is derived from each asset's zone and subnet
- * so containers stay cleanly separated. Conduits are unaffected (they reference asset ids).
+ * Re-positions a project's assets into the tidy tiered network layout. Authored x/y in
+ * the scenario files become irrelevant — the layout is derived from each asset's zone and
+ * subnet, and the conduit graph decides ordering so connected assets sit near each other.
  */
 export function applyLayout(project: OtProject): OtProject {
-  const positions = layoutBySubnet(project.assets, project.subnets ?? []);
+  const positions = layoutTiered(project.assets, project.subnets ?? [], project.conduits);
   return {
     ...project,
     assets: project.assets.map((asset) => ({ ...asset, position: positions.get(asset.id) ?? asset.position }))

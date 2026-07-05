@@ -7,7 +7,7 @@ import {
   SUBNET_BOX_PAD,
   SUBNET_LABEL_HEIGHT,
   assetYForZone,
-  layoutBySubnet,
+  layoutTiered,
   projectPurduePositions,
   resolveAssetX,
   resolveFreePosition,
@@ -117,7 +117,7 @@ describe("subnetBoundingBoxes", () => {
   });
 });
 
-describe("layoutBySubnet", () => {
+describe("layoutTiered", () => {
   const subnets: Subnet[] = [
     { id: "sn-a", name: "A", cidr: "", vlan: "" },
     { id: "sn-b", name: "B", cidr: "", vlan: "" }
@@ -131,21 +131,79 @@ describe("layoutBySubnet", () => {
   ];
 
   it("stacks higher Purdue levels above lower ones", () => {
-    const positions = layoutBySubnet(assets, subnets);
+    const positions = layoutTiered(assets, subnets, []);
     expect(positions.get("a1")!.y).toBeLessThan(positions.get("a2")!.y);
   });
 
   it("spreads same-subnet, same-level members sideways", () => {
-    const positions = layoutBySubnet(assets, subnets);
+    const positions = layoutTiered(assets, subnets, []);
     expect(positions.get("a2")!.y).toBe(positions.get("a3")!.y);
     expect(positions.get("a2")!.x).not.toBe(positions.get("a3")!.x);
   });
 
   it("gives each subnet a separated column band so containers never overlap horizontally", () => {
-    const positions = layoutBySubnet(assets, subnets);
+    const positions = layoutTiered(assets, subnets, []);
     const placed = assets.map((asset) => ({ ...asset, position: positions.get(asset.id)! }));
     const boxes = subnetBoundingBoxes(placed, subnets).sort((p, q) => p.x - q.x);
     expect(boxes).toHaveLength(2);
     expect(boxes[0].x + boxes[0].width).toBeLessThanOrEqual(boxes[1].x);
+  });
+
+  it("reorders a tier so crossing conduits straighten out", () => {
+    // a,b on the upper tier; c,d below. a-d and b-c cross when both tiers sit in id
+    // order; the barycentre sweep should flip one tier so the edges run parallel.
+    const crossing: Array<{ id: string; zone: ZoneId }> = [
+      { id: "a", zone: "level4" },
+      { id: "b", zone: "level4" },
+      { id: "c", zone: "level2" },
+      { id: "d", zone: "level2" }
+    ];
+    const conduits = [
+      { source: "a", target: "d" },
+      { source: "b", target: "c" }
+    ];
+    const positions = layoutTiered(crossing, [], conduits);
+    const cross =
+      (positions.get("a")!.x - positions.get("b")!.x) * (positions.get("d")!.x - positions.get("c")!.x);
+    expect(cross).toBeGreaterThan(0);
+  });
+
+  it("pulls a connected asset towards its neighbour's column", () => {
+    // Hub h talks only to f2; with three same-tier assets below, f2 should end up
+    // nearest the hub's x of the three.
+    const cluster: Array<{ id: string; zone: ZoneId }> = [
+      { id: "h", zone: "level3" },
+      { id: "f1", zone: "level1" },
+      { id: "f2", zone: "level1" },
+      { id: "f3", zone: "level1" }
+    ];
+    const positions = layoutTiered(cluster, [], [{ source: "h", target: "f2" }]);
+    const hubX = positions.get("h")!.x;
+    const distances = ["f1", "f2", "f3"].map((id) => Math.abs(positions.get(id)!.x - hubX));
+    expect(Math.min(...distances)).toBe(Math.abs(positions.get("f2")!.x - hubX));
+  });
+
+  it("keeps every asset on its zone tier row", () => {
+    const conduits = [{ source: "a1", target: "b1" }];
+    const positions = layoutTiered(assets, subnets, conduits);
+    const rows = new Map<ZoneId, number>();
+    for (const asset of assets) {
+      const y = positions.get(asset.id)!.y;
+      const existing = rows.get(asset.zone);
+      if (existing !== undefined) {
+        expect(y).toBe(existing);
+      }
+      rows.set(asset.zone, y);
+    }
+  });
+
+  it("is deterministic for the same input", () => {
+    const conduits = [
+      { source: "a1", target: "b1" },
+      { source: "a2", target: "a3" }
+    ];
+    const first = layoutTiered(assets, subnets, conduits);
+    const second = layoutTiered(assets, subnets, conduits);
+    expect([...first.entries()]).toEqual([...second.entries()]);
   });
 });
