@@ -46,6 +46,12 @@ export function Root() {
     window.localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
+  // Mirror the main site's mobile chrome: body.mobile-lite drives the fixed
+  // bottom nav bar in the site-frame styles.
+  useEffect(() => {
+    document.body.classList.toggle("mobile-lite", isMobile);
+  }, [isMobile]);
+
   useEffect(() => {
     window.localStorage.setItem(LAST_VIEW_STORAGE_KEY, view);
   }, [view]);
