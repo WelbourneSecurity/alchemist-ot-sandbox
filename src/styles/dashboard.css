@@ -6,7 +6,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.8rem;
-  padding: 1.6rem 1.5rem 2.4rem;
+  /* No top padding: the sticky masthead sits flush at the top like every other
+     site header (the main site + CTF archive), instead of ~26px lower. */
+  padding: 0 1.5rem 2.4rem;
   color: var(--text);
 }
 
