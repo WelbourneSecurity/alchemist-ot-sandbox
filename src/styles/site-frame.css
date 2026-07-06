@@ -133,31 +133,34 @@
   max-width: 52rem;
   margin: 0.45rem 0 0;
   font-family: var(--font-display);
-  font-size: clamp(2.6rem, 6vw, 4.75rem);
-  line-height: 0.98;
+  font-size: clamp(2.3rem, 4.5vw, 3.6rem);
+  line-height: 1;
 }
 
 .page-hero-lede {
   max-width: 42rem;
-  margin: 1.35rem 0 0;
-  color: var(--muted);
-  font-size: 1.05rem;
-  line-height: 1.5;
+  margin: 1.15rem 0 0;
+  color: var(--text);
+  font-size: 1.08rem;
+  line-height: 1.7;
 }
 
-/* Dithering hero card, mirrored from the main site: one hard-edged surface
-   holding a WebGL ordered-dither warp field (lib/heroDither.ts) behind the
-   copy. Sharp corners + hairline border keep the app's flat brand. */
+/* Dithering hero card, modelled on the main site's projects/writeups
+   .page-hero-card: a compact sub-page card holding the WebGL ordered-dither
+   warp field (lib/heroDither.ts) behind bottom-left copy. Only the main-site
+   landing hero is intentionally larger. */
 .page-hero.hero-cta {
-  padding: 2.5rem 0 3rem;
+  padding: 1.2rem 0 0;
 }
 
 .hero-card {
   position: relative;
   display: flex;
-  align-items: center;
-  min-height: min(32rem, 66svh);
-  padding: clamp(3rem, 7vh, 4.5rem) clamp(1.5rem, 4vw, 3.5rem);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: clamp(15rem, 32svh, 20rem);
+  padding: clamp(2rem, 5vh, 3rem) clamp(1.4rem, 3vw, 2.5rem);
   border: 1px solid var(--line-strong);
   background: var(--surface);
   overflow: hidden;
@@ -185,10 +188,25 @@ body.light-mode .hero-dither {
   mix-blend-mode: multiply;
 }
 
+/* Text protection: a page-coloured pool rising from the bottom edge quiets the
+   dither field where the copy sits (matches the projects/writeups card). */
+.hero-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bg) 85%, transparent),
+    transparent 78%
+  );
+  pointer-events: none;
+}
+
 .hero-card .hero-copy {
   position: relative;
   z-index: 2;
-  max-width: 46rem;
+  max-width: 52rem;
 }
 
 /* Notice shown in place of the workbench CTAs on the phone/tablet hero gate. */
