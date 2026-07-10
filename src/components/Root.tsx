@@ -5,7 +5,28 @@ import { initialView, LAST_VIEW_STORAGE_KEY, type AppView } from "../lib/appView
 
 const THEME_KEY = "ot-sandbox-theme";
 
+// Shared with the main site and the ctf subdomain: the light/dark choice is
+// mirrored to a cookie scoped to .welbournesecurity.com so it carries across
+// origins (localStorage is per-origin and can't). Cookie wins on load; the
+// legacy ot-sandbox-theme localStorage key stays as a same-origin fallback.
+const THEME_COOKIE = "ws_theme";
+
+function readThemeCookie(): "dark" | "light" | null {
+  const match = document.cookie.match(/(?:^|;\s*)ws_theme=(light|dark)/);
+  return match ? (match[1] as "dark" | "light") : null;
+}
+
+function writeThemeCookie(theme: "dark" | "light"): void {
+  const onSiteDomain = /(^|\.)welbournesecurity\.com$/.test(location.hostname);
+  const domain = onSiteDomain ? "; domain=.welbournesecurity.com" : "";
+  document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=31536000; samesite=lax${domain}`;
+}
+
 function initialTheme(): "dark" | "light" {
+  const shared = readThemeCookie();
+  if (shared) {
+    return shared;
+  }
   const stored = window.localStorage.getItem(THEME_KEY);
   if (stored === "dark" || stored === "light") {
     return stored;
@@ -44,6 +65,7 @@ export function Root() {
   useEffect(() => {
     document.body.classList.toggle("light-mode", theme === "light");
     window.localStorage.setItem(THEME_KEY, theme);
+    writeThemeCookie(theme);
   }, [theme]);
 
   // Mirror the main site's mobile chrome: body.mobile-lite drives the fixed
