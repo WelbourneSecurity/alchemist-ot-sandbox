@@ -1,7 +1,9 @@
 /* --- Overview dashboard (home / front door) --- */
 .dashboard {
   min-height: 100vh;
-  max-width: 76rem;
+  /* 90rem = 1440px, matching the main site's container so the front door is
+     the same width as the rest of the site. */
+  max-width: 90rem;
   margin: 0 auto;
   display: flex;
   flex-direction: column;

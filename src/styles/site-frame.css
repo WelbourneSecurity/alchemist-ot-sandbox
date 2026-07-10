@@ -3,7 +3,8 @@
    primary nav, and a large page-hero band. Reuses the app's existing --accent / --muted /
    --line-strong / --signal brand tokens and the .brand-mark + .theme-toggle rules. */
 .site-frame {
-  --content-width: min(1180px, calc(100vw - 2rem));
+  /* Match the main site's container width (welbournesecurity.com uses 1440). */
+  --content-width: min(1440px, calc(100vw - 2rem));
   --header-height: 5.5rem;
   --gutter: 1rem;
 }
