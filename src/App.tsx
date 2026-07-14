@@ -842,6 +842,7 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
         ref={importInputRef}
         className="visually-hidden"
         type="file"
+        aria-label="Import project or scan JSON file"
         accept="application/json,.json"
         onChange={(event) => {
           const file = event.target.files?.[0];
