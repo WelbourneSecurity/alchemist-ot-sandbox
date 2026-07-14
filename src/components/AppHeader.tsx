@@ -83,8 +83,8 @@ export function AppHeader({
       >
         <BrandMark />
         <div>
-          <h1>Welbourne Security</h1>
-          <p>Alchemist OT Sandbox</p>
+          <p className="brand-wordmark">Welbourne Security</p>
+          <h1 className="brand-subtitle">Alchemist OT Sandbox</h1>
         </div>
       </button>
 
@@ -165,6 +165,7 @@ export function AppHeader({
         ref={inputRef}
         className="visually-hidden"
         type="file"
+        aria-label="Import project JSON file"
         accept="application/json,.json"
         onChange={(event) => {
           const file = event.target.files?.[0];
