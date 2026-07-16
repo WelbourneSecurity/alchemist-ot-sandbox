@@ -10,10 +10,9 @@ const SITE = "https://welbournesecurity.com";
  */
 const NAV_LINKS: Array<{ label: string; href: string; current?: boolean }> = [
   { label: "Home", href: `${SITE}/` },
-  { label: "Projects", href: `${SITE}/projects/` },
   { label: "Writeups", href: `${SITE}/writeups/` },
-  { label: "Past CTFs", href: "https://ctf.welbournesecurity.com/" },
   { label: "Alchemist", href: "https://alchemist.welbournesecurity.com/", current: true },
+  { label: "Observer", href: `${SITE}/observer/` },
   { label: "Blue Team", href: `${SITE}/blue-team/` },
   { label: "Contact", href: `${SITE}/contact/` }
 ];
