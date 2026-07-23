@@ -22,9 +22,12 @@ describe("Dashboard (desktop)", () => {
     expect(screen.getAllByRole("button", { name: /open workbench/i }).length).toBeGreaterThan(0);
   });
 
-  it("shows the desktop-only note on mobile instead of the workbench CTA", () => {
+  it("renders the full dashboard on mobile with a desktop-editing note", () => {
     render(<Dashboard onEnter={noop} theme="dark" onToggleTheme={noop} isMobile />);
-    expect(screen.getByText(/desktop workbench/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open workbench/i })).not.toBeInTheDocument();
+    // The posture overview is available on mobile (read-only), not gated away.
+    expect(screen.getByRole("heading", { name: /saved assessments/i })).toBeInTheDocument();
+    expect(screen.getByText(/topology editing is desktop-only/i)).toBeInTheDocument();
+    // CTA reads "Open assessment" on mobile rather than "Open workbench".
+    expect(screen.getAllByRole("button", { name: /open assessment/i }).length).toBeGreaterThan(0);
   });
 });

@@ -105,11 +105,11 @@ export function Root() {
     }
   }, []);
 
-  // The workbench is desktop-only: on phone/tablet always show the dashboard's
-  // hero gate, regardless of the hash or the last-viewed state.
-  if (isMobile || view === "home") {
+  if (view === "home") {
     return <Dashboard onEnter={enter} theme={theme} onToggleTheme={toggleTheme} isMobile={isMobile} />;
   }
 
-  return <App onGoHome={goHome} initialIntent={intent} theme={theme} onToggleTheme={toggleTheme} />;
+  // On phone/tablet App renders read-only (the topology canvas is desktop-only);
+  // the assessment, findings, standards mapping and report all work.
+  return <App onGoHome={goHome} initialIntent={intent} theme={theme} onToggleTheme={toggleTheme} isMobile={isMobile} />;
 }

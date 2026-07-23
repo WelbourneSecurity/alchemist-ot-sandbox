@@ -26,16 +26,17 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("Root mobile gate", () => {
-  it("renders the desktop-only dashboard gate below the breakpoint", () => {
+  it("renders the dashboard with a desktop-editing note below the breakpoint", () => {
     setViewport(true);
     render(<Root />);
-    expect(screen.getByText(/desktop workbench/i)).toBeInTheDocument();
+    expect(screen.getByText(/topology editing is desktop-only/i)).toBeInTheDocument();
+    // The dashboard itself still renders (read-only), not a bare gate.
+    expect(screen.getByRole("heading", { name: /saved assessments/i })).toBeInTheDocument();
   });
 
-  it("does not show the desktop-only note on a wide viewport at home", () => {
+  it("does not show the desktop-editing note on a wide viewport at home", () => {
     setViewport(false);
     render(<Root />);
-    // Home dashboard renders its posture overview, not the mobile gate note.
-    expect(screen.queryByText(/Open it on a larger screen/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/topology editing is desktop-only/i)).not.toBeInTheDocument();
   });
 });
