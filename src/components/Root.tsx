@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { App } from "../App";
 import { Dashboard, type DashboardIntent } from "./Dashboard";
 import { initialView, LAST_VIEW_STORAGE_KEY, type AppView } from "../lib/appView";
+import { safeSetItem } from "../lib/safeStorage";
 
 const THEME_KEY = "ot-sandbox-theme";
 
@@ -64,7 +65,7 @@ export function Root() {
 
   useEffect(() => {
     document.body.classList.toggle("light-mode", theme === "light");
-    window.localStorage.setItem(THEME_KEY, theme);
+    safeSetItem(THEME_KEY, theme);
     writeThemeCookie(theme);
   }, [theme]);
 
@@ -75,7 +76,7 @@ export function Root() {
   }, [isMobile]);
 
   useEffect(() => {
-    window.localStorage.setItem(LAST_VIEW_STORAGE_KEY, view);
+    safeSetItem(LAST_VIEW_STORAGE_KEY, view);
   }, [view]);
 
   useEffect(() => {

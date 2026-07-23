@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { LayoutMode } from "../models/types";
+import { safeSetItem } from "../lib/safeStorage";
 
 export interface PanelLayout {
   paletteOpen: boolean;
@@ -55,7 +56,7 @@ export function usePanelLayout() {
   const [layout, setLayout] = useState<PanelLayout>(() => loadLayout());
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    safeSetItem(STORAGE_KEY, JSON.stringify(layout));
   }, [layout]);
 
   const togglePalette = useCallback(() => setLayout((current) => ({ ...current, paletteOpen: !current.paletteOpen })), []);

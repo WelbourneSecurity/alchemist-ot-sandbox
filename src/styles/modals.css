@@ -161,6 +161,16 @@
   line-height: 1.4;
 }
 
+.import-preview-oversize {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-left: 3px solid var(--warn, #e0a53f);
+  background: color-mix(in srgb, var(--warn, #e0a53f) 12%, transparent);
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .import-mode {
   display: flex;
   gap: 1.2rem;

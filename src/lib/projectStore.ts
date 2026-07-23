@@ -1,4 +1,5 @@
 import { sampleProject } from "../data/sampleProject";
+import { safeSetItem, safeRemoveItem } from "./safeStorage";
 import { parseProjectJson, serializeProject } from "../engine/serialization";
 import type { OtProject } from "../models/types";
 
@@ -47,7 +48,7 @@ function readIndex(): SavedProjectMeta[] {
 }
 
 function writeIndex(index: SavedProjectMeta[]): void {
-  window.localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+  safeSetItem(INDEX_KEY, JSON.stringify(index));
 }
 
 function readPayload(id: string): OtProject | null {
@@ -60,7 +61,7 @@ function readPayload(id: string): OtProject | null {
 }
 
 function writePayload(id: string, project: OtProject): void {
-  window.localStorage.setItem(payloadKey(id), serializeProject(project));
+  safeSetItem(payloadKey(id), serializeProject(project));
 }
 
 function addEntry(project: OtProject): SavedProjectMeta {
@@ -78,7 +79,7 @@ function ensureInitialised(): string {
     return current;
   }
   if (index.length > 0 && readPayload(index[0].id)) {
-    window.localStorage.setItem(CURRENT_KEY, index[0].id);
+    safeSetItem(CURRENT_KEY, index[0].id);
     return index[0].id;
   }
 
@@ -92,7 +93,7 @@ function ensureInitialised(): string {
     }
   }
   const meta = addEntry(project);
-  window.localStorage.setItem(CURRENT_KEY, meta.id);
+  safeSetItem(CURRENT_KEY, meta.id);
   return meta.id;
 }
 
@@ -123,14 +124,14 @@ export function saveCurrentProject(project: OtProject): void {
 
 export function openProject(id: string): void {
   if (readPayload(id)) {
-    window.localStorage.setItem(CURRENT_KEY, id);
+    safeSetItem(CURRENT_KEY, id);
   }
 }
 
 /** Creates a new saved assessment from a project and makes it current; returns its id. */
 export function createProject(project: OtProject): string {
   const meta = addEntry(project);
-  window.localStorage.setItem(CURRENT_KEY, meta.id);
+  safeSetItem(CURRENT_KEY, meta.id);
   return meta.id;
 }
 
@@ -154,15 +155,15 @@ export function renameProject(id: string, name: string): void {
 }
 
 export function deleteProject(id: string): void {
-  window.localStorage.removeItem(payloadKey(id));
-  window.localStorage.removeItem(baselineKey(id));
+  safeRemoveItem(payloadKey(id));
+  safeRemoveItem(baselineKey(id));
   const index = readIndex().filter((meta) => meta.id !== id);
   writeIndex(index);
   if (window.localStorage.getItem(CURRENT_KEY) === id) {
     if (index.length > 0) {
-      window.localStorage.setItem(CURRENT_KEY, index[0].id);
+      safeSetItem(CURRENT_KEY, index[0].id);
     } else {
-      window.localStorage.removeItem(CURRENT_KEY);
+      safeRemoveItem(CURRENT_KEY);
     }
   }
 }
@@ -178,9 +179,9 @@ export function getBaseline(): OtProject | null {
 }
 
 export function setBaseline(project: OtProject): void {
-  window.localStorage.setItem(baselineKey(ensureInitialised()), serializeProject(project));
+  safeSetItem(baselineKey(ensureInitialised()), serializeProject(project));
 }
 
 export function clearBaseline(): void {
-  window.localStorage.removeItem(baselineKey(ensureInitialised()));
+  safeRemoveItem(baselineKey(ensureInitialised()));
 }
