@@ -109,7 +109,7 @@ export const knowledgeBase: KbTopic[] = [
         points: [
           "Group assets of similar risk into zones; control every flow between zones through a defined conduit.",
           "Each zone has a target SL (SL-T) and an achieved SL (SL-A) on a 0–4 scale.",
-          "SL-A is judged against the seven Foundational Requirements (FR1–FR7) and is capped by the weakest one."
+          "A formal SL-A requires assessment of applicable 62443-3-3 requirements and enhancements across FR1–FR7; architecture alone is not sufficient evidence."
         ]
       },
       {
@@ -432,15 +432,15 @@ export const knowledgeBase: KbTopic[] = [
     kind: "guide",
     category: "Frameworks",
     title: "Run an IEC 62443 Security Level assessment",
-    summary: "Assess a zone's achieved Security Level (SL-A) against its target (SL-T) using the seven Foundational Requirements.",
+    summary: "Assess a zone against its target SL using the seven Foundational Requirements and evidence for applicable 62443-3-3 requirements.",
     sections: [
       {
         heading: "Steps",
         points: [
           "1. Confirm zones and conduits, and the target SL (SL-T) per zone from the risk assessment (62443-3-2).",
-          "2. Assess controls against each Foundational Requirement (FR1–FR7) for the zone and its conduits.",
-          "3. Take the zone SL-A as the weakest FR; the chain is only as strong as its weakest link.",
-          "4. Record the gap (SL-T minus SL-A) and which FR is limiting.",
+          "2. Identify the applicable 62443-3-3 system requirements and enhancements under each FR for the zone and its conduits.",
+          "3. Collect evidence, record applicability and compensating controls, then determine the level achieved for each FR.",
+          "4. Record the gap to SL-T, the limiting FRs and any evidence limitations.",
           "5. Plan remediation against the limiting FRs; re-assess after changes."
         ]
       }

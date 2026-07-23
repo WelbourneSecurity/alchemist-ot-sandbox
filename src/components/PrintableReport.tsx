@@ -167,14 +167,17 @@ export function PrintableReport({ project, assessment, reachability }: Printable
       </section>
 
       <section>
-        <h2>IEC 62443 Security Levels</h2>
-        <p>Target (SL-T) vs achieved (SL-A) per zone. SL-A is capped by the weakest Foundational Requirement.</p>
+        <h2>IEC 62443 architecture signals</h2>
+        <p>
+          Target (SL-T) versus an architecture-derived FR signal per zone. This is not a formal SL-A; confirm applicable
+          62443-3-3 requirements, enhancements and evidence before claiming an achieved Security Level.
+        </p>
         <table>
           <thead>
             <tr>
               <th>Zone</th>
               <th>SL-T</th>
-              <th>SL-A</th>
+              <th>Model signal</th>
               <th>Gap</th>
               <th>Limiting FR</th>
             </tr>
@@ -194,10 +197,11 @@ export function PrintableReport({ project, assessment, reachability }: Printable
       </section>
 
       <section>
-        <h2>NCSC CAF Compliance</h2>
+        <h2>NCSC CAF evidence mapping</h2>
         <p>
-          CAF readiness across assessed outcomes: <strong>{caf.postureScore}%</strong>. Governance and people outcomes are
-          marked Not Assessed and require assessor attestation. This is an advisory mapping, not a formal CAF return.
+          CAF evidence signal across assessed principles: <strong>{caf.postureScore}%</strong>. Governance and people outcomes
+          are marked Not Assessed and require assessor attestation. This is not organisational readiness or a formal CAF
+          return.
         </p>
         <table>
           <thead>

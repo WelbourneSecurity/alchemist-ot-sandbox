@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { icsTechniques, techniquesForCategory } from "./attackIcs";
+import { ATTACK_ICS_VERSION, icsTechniques, techniquesForCategory } from "./attackIcs";
 
 describe("ATT&CK for ICS mapping", () => {
   it("maps weakness categories to known technique ids", () => {
@@ -22,5 +22,12 @@ describe("ATT&CK for ICS mapping", () => {
   it("assigns every technique to a known tactic", () => {
     const tactics = new Set(icsTechniques.map((technique) => technique.tactic));
     expect(tactics.size).toBeGreaterThan(0);
+  });
+
+  it("uses current ATT&CK v19 identifiers while preserving previous ids for traceability", () => {
+    expect(ATTACK_ICS_VERSION).toBe("19.1");
+    expect(techniquesForCategory("identity")).toContain("T1694.001");
+    expect(icsTechniques.find((technique) => technique.id === "T1694.001")?.formerIds).toContain("T0812");
+    expect(icsTechniques.some((technique) => technique.id === "T0812")).toBe(false);
   });
 });

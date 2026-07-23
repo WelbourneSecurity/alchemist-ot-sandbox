@@ -4,12 +4,11 @@ import type { Asset, Conduit, OtProject, ZoneId } from "../models/types";
 /**
  * ISA/IEC 62443 Security Level model.
  *
- * Each zone has a target Security Level (SL-T) and an achieved Security Level (SL-A).
- * SL-A is derived from the zone's controls and the posture of the conduits crossing its
- * boundary, mapped to the seven Foundational Requirements (62443-3-3 FR1–FR7). Following
- * 62443, a zone's SL-A is capped by its weakest FR (the chain is only as strong as its
- * weakest link). The model expresses SL 0–3 (0 = baseline not met); SL 4 needs controls
- * beyond what this architectural tool captures.
+ * Each zone has a target Security Level (SL-T) and an architecture-derived signal from the
+ * zone's declared controls and boundary conduits, mapped to the seven Foundational Requirements
+ * (62443-3-3 FR1–FR7). The signal is capped by its weakest modeled FR. It is deliberately not
+ * presented as a formal SL-A because this tool cannot validate every applicable system
+ * requirement, requirement enhancement, compensating control, or evidence artifact.
  */
 
 export type FoundationalRequirement = "FR1" | "FR2" | "FR3" | "FR4" | "FR5" | "FR6" | "FR7";
@@ -58,7 +57,7 @@ const isControlHost = (asset: Asset) => CONTROL_HOST_TYPES.has(asset.type);
 const isControlZone = (zone: ZoneId) => getZone(zone).riskRank <= 3;
 const isEnterpriseZone = (zone: ZoneId) => getZone(zone).riskRank >= 6;
 
-/** Default SL-T by Purdue position — control zones carry the strongest target. */
+/** Suggested starting SL-T by Purdue position; the assessor must confirm it through risk assessment. */
 export function defaultTargetSL(zone: ZoneId): number {
   const rank = getZone(zone).riskRank;
   if (rank <= 3) {
@@ -156,8 +155,8 @@ function frLevelsForZone(zone: ZoneId, project: OtProject): Record<FoundationalR
 }
 
 /**
- * Assesses every zone's achieved Security Level against its target. `zoneTargets` overrides
- * the per-zone default SL-T where provided.
+ * Calculates every zone's indicative architecture signal against its target. `zoneTargets`
+ * overrides the suggested per-zone SL-T where provided.
  */
 export function assessSecurityLevels(project: OtProject, zoneTargets?: Partial<Record<ZoneId, number>>): SecurityLevelAssessment {
   return {

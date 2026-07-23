@@ -46,8 +46,8 @@ export const TAB_GROUPS: AnalysisTabGroup[] = [
     label: "Posture",
     tabs: [
       { id: "rating", label: "Security Rating", Icon: ShieldCheck },
-      { id: "levels", label: "Security Levels", Icon: Layers },
-      { id: "compliance", label: "Compliance (CAF)", Icon: Scale },
+      { id: "levels", label: "62443 FR Signals", Icon: Layers },
+      { id: "compliance", label: "CAF Evidence", Icon: Scale },
       { id: "risk", label: "Risk", Icon: Flame },
       { id: "findings", label: "Findings", Icon: AlertTriangle }
     ]

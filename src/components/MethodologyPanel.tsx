@@ -4,7 +4,7 @@ import { categoryWeights, scoreBands, severityDeduction } from "../engine/scorin
 import { MAX_SL, foundationalRequirements } from "../engine/securityLevels";
 import { categoryLabels } from "../data/catalog";
 import { cafObjectives } from "../data/caf";
-import { icsTactics } from "../data/attackIcs";
+import { ATTACK_ICS_REVIEWED, ATTACK_ICS_VERSION, icsTactics } from "../data/attackIcs";
 import type { ScoreCategory, Severity } from "../models/types";
 
 interface MethodologyPanelProps {
@@ -155,14 +155,17 @@ export function MethodologyPanel({ open, onClose }: MethodologyPanelProps) {
             </section>
 
             <section>
-              <h4>IEC 62443 Security Levels</h4>
+              <h4>IEC 62443 architecture signals</h4>
               <ul>
                 <li>
-                  Each zone carries a target (SL-T) and an achieved (SL-A) Security Level. 62443 defines SL 0 to
-                  4; Alchemist models up to SL {MAX_SL}.
+                  Each zone carries a target (SL-T) from the risk assessment. Alchemist models an indicative
+                  architecture signal up to level {MAX_SL} against the seven Foundational Requirements.
                 </li>
-                <li>SL-A is judged against the seven Foundational Requirements and is capped by the weakest one.</li>
-                <li>Any zone whose SL-A falls below its SL-T becomes a finding, naming the limiting requirement.</li>
+                <li>The signal is capped by the weakest modeled FR and names the limiting requirement.</li>
+                <li>
+                  It is not a formal SL-A. Confirm applicable 62443-3-3 requirements, enhancements, evidence and
+                  compensating controls before claiming an achieved Security Level.
+                </li>
               </ul>
               <div className="kb-table-wrap">
                 <table className="kb-table">
@@ -185,14 +188,14 @@ export function MethodologyPanel({ open, onClose }: MethodologyPanelProps) {
             </section>
 
             <section>
-              <h4>NCSC CAF posture</h4>
+              <h4>NCSC CAF evidence signal</h4>
               <ul>
-                <li>Outcomes are derived from the model across the four objectives and fourteen principles.</li>
+                <li>Architecture-derived signals are mapped across the four objectives and fourteen principles.</li>
                 <li>
                   Governance and people outcomes cannot be evidenced from a topology, so they are marked Not
                   Assessed for an assessor to attest.
                 </li>
-                <li>This is an advisory mapping, not a formal CAF return.</li>
+                <li>The percentage is not organisational readiness; CAF outcomes require contextual evidence and expert judgement.</li>
               </ul>
               <div className="kb-table-wrap">
                 <table className="kb-table">
@@ -221,7 +224,10 @@ export function MethodologyPanel({ open, onClose }: MethodologyPanelProps) {
                   Each finding maps to the ICS techniques its weakness plausibly enables, giving a
                   threat-informed exposure view rather than a coverage claim.
                 </li>
-                <li>Techniques roll up into the ATT&amp;CK for ICS tactics: {icsTactics.map((tactic) => tactic.name).join(" · ")}.</li>
+                <li>
+                  The current curated mapping covers these tactics: {icsTactics.map((tactic) => tactic.name).join(" · ")}.
+                </li>
+                <li>Mapping version: ATT&amp;CK for ICS v{ATTACK_ICS_VERSION}, reviewed {ATTACK_ICS_REVIEWED}.</li>
               </ul>
             </section>
 

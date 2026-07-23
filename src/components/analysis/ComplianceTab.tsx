@@ -24,7 +24,7 @@ export function ComplianceTab({ caf, findingById, onFindingSelect, onCafOverride
       <div className="caf-head">
         <div className="caf-posture">
           <strong>{caf.postureScore}%</strong>
-          <span>CAF readiness · assessed outcomes</span>
+          <span>CAF evidence signal · assessed principles</span>
         </div>
         <div className="caf-objective-summary">
           {caf.objectives.map((objective) => {
@@ -45,6 +45,11 @@ export function ComplianceTab({ caf, findingById, onFindingSelect, onCafOverride
           Engagement context
         </button>
       </div>
+
+      <p className="assessment-caveat">
+        Architecture-derived indicator only. CAF outcomes require contextual evidence and expert judgement; this
+        percentage is not organisational readiness or a formal CAF result.
+      </p>
 
       {cafObjectives.map((objective) => (
         <div className="caf-objective-group" key={objective.id}>

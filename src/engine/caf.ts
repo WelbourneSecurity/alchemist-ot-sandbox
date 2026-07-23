@@ -92,7 +92,7 @@ function average(values: number[]): number {
   return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-/** Maps the existing assessment, Security Levels and risk into an NCSC CAF posture. */
+/** Maps declared architecture, indicative FR signals and risk into an advisory NCSC CAF evidence view. */
 export function assessCaf(
   project: OtProject,
   assessment: SecurityAssessment,
