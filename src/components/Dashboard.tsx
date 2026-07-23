@@ -155,7 +155,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
             <p className="eyebrow">OT security sandbox</p>
             <h1>Model, assess and harden OT network architecture.</h1>
             <p className="page-hero-lede">
-              Build Purdue-zoned topologies, test reachability across trust boundaries, and score segmentation against
+              Build Purdue-zoned topologies, test reachability across trust boundaries, and map architecture signals to
               IEC 62443 and the NCSC CAF, entirely in the browser.
             </p>
             <div className="dashboard-cta">
@@ -197,15 +197,15 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
       <section className="dashboard-tiles" aria-label="Posture overview">
         <article className="dash-tile">
           <Layers size={18} aria-hidden="true" />
-          <span>IEC 62443 SL</span>
+          <span>IEC 62443 FR signal</span>
           <strong>{slGaps}</strong>
           <small>{slGaps === 1 ? "zone below target" : "zones below target"}</small>
         </article>
         <article className="dash-tile">
           <Scale size={18} aria-hidden="true" />
-          <span>NCSC CAF</span>
+          <span>CAF evidence signal</span>
           <strong>{caf.postureScore}%</strong>
-          <small>advisory posture</small>
+          <small>assessed principles only</small>
         </article>
         <article className="dash-tile">
           <Flame size={18} aria-hidden="true" />

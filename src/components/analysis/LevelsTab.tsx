@@ -15,8 +15,8 @@ export function LevelsTab({ securityLevels, onZoneTargetChange }: LevelsTabProps
           <tr>
             <th>Zone</th>
             <th>SL-T</th>
-            <th>SL-A</th>
-            <th>Gap</th>
+            <th title="Architecture-derived indicator, not a formal achieved Security Level">Model signal</th>
+            <th>Target gap</th>
             {foundationalRequirements.map((fr) => (
               <th key={fr.id} title={fr.label}>
                 {fr.id}
@@ -45,7 +45,7 @@ export function LevelsTab({ securityLevels, onZoneTargetChange }: LevelsTabProps
                     ))}
                   </select>
                 </td>
-                <td className={gap > 0 ? "sl-a sl-a-below" : "sl-a"}>SL {zoneSL.achieved}</td>
+                <td className={gap > 0 ? "sl-a sl-a-below" : "sl-a"}>Level {zoneSL.achieved}</td>
                 <td className="sl-gap">{gap > 0 ? `-${gap}` : "met"}</td>
                 {foundationalRequirements.map((fr) => (
                   <td
@@ -62,8 +62,9 @@ export function LevelsTab({ securityLevels, onZoneTargetChange }: LevelsTabProps
         </tbody>
       </table>
       <p className="muted">
-        SL-A (achieved) is capped by the weakest Foundational Requirement (FR1–FR7); the limiting requirement(s) are
-        marked. Set the target per zone; any zone below target appears as a finding. Hover a column for its name.
+        This architecture-derived signal is capped by the weakest modeled Foundational Requirement (FR1–FR7). It is
+        not a formal SL-A: confirm applicable 62443-3-3 requirements, enhancements, evidence and compensating controls
+        before claiming an achieved Security Level. Set the SL-T per zone from the risk assessment.
       </p>
     </div>
   );

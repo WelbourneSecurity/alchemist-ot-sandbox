@@ -432,10 +432,10 @@ export function assessProject(project: OtProject): SecurityAssessment {
       {
         category: "segmentation",
         severity: zoneSL.target - zoneSL.achieved >= 2 ? "high" : "medium",
-        title: `Zone below target Security Level (SL-A ${zoneSL.achieved} vs SL-T ${zoneSL.target})`,
-        detail: `${zoneDef.levelLabel} ${zoneDef.name} achieves SL ${zoneSL.achieved} against a target of SL ${zoneSL.target}. Limiting requirement(s): ${limiting}.`,
+        title: `Modeled 62443 FR signal below target (level ${zoneSL.achieved} vs SL-T ${zoneSL.target})`,
+        detail: `${zoneDef.levelLabel} ${zoneDef.name} has an architecture-derived signal of ${zoneSL.achieved} against a target of SL ${zoneSL.target}. Limiting modeled requirement(s): ${limiting}. This is not a formal SL-A.`,
         remediation:
-          "Close the weakest Foundational Requirement(s) for this zone; strengthen the controls and conduit posture (authentication, use control, integrity, data flow, monitoring, or availability) that hold the achieved level down.",
+          "Review the limiting Foundational Requirement(s), collect evidence against the applicable 62443-3-3 requirements, and strengthen the controls or conduit posture that hold the modeled signal down.",
         affectedAssetIds: project.assets.filter((asset) => asset.zone === zoneSL.zone).map((asset) => asset.id),
         affectedConduitIds: [],
         references: [standardReferences.isa62443]

@@ -1,4 +1,5 @@
 import type { Finding, SecurityAssessment, Severity } from "../../models/types";
+import { groupFindings } from "../../lib/findingGroups";
 
 interface FindingsTabProps {
   assessment: SecurityAssessment;
@@ -23,6 +24,8 @@ export function FindingsTab({
   activeFindingId,
   onFindingSelect
 }: FindingsTabProps) {
+  const groupedFindings = groupFindings(visibleFindings);
+
   return (
     <div className="analysis-content findings-list">
       <div className="findings-filters">
@@ -42,23 +45,52 @@ export function FindingsTab({
           Documentation gaps
         </label>
       </div>
-      {visibleFindings.length > 0 ? (
-        visibleFindings.map((finding) => (
+      {groupedFindings.length > 0 ? (
+        groupedFindings.map((group) => {
+          const finding = group.representative;
+          const isActive = group.findings.some((item) => item.id === activeFindingId);
+          return (
           <article
-            className={`finding severity-${finding.severity} ${activeFindingId === finding.id ? "active" : ""}`}
-            key={finding.id}
+            className={`finding severity-${finding.severity} ${isActive ? "active" : ""}`}
+            key={group.key}
           >
             <div>
               <span>{finding.severity}</span>
               <strong>{finding.title}</strong>
+              {group.findings.length > 1 ? <b className="finding-count">{group.findings.length} affected</b> : null}
             </div>
-            <p>{finding.detail}</p>
             <small>{finding.remediation}</small>
-            <button type="button" className="text-button" onClick={() => onFindingSelect(finding)}>
-              Highlight affected conduits
-            </button>
+            {group.findings.length === 1 ? (
+              <>
+                <p>{finding.detail}</p>
+                <button type="button" className="text-button" onClick={() => onFindingSelect(finding)}>
+                  Show affected path
+                </button>
+              </>
+            ) : (
+              <details className="finding-occurrences">
+                <summary>
+                  Review {group.findings.length} occurrences · {group.affectedAssetIds.length} assets ·{" "}
+                  {group.affectedConduitIds.length} conduits
+                </summary>
+                <div className="finding-occurrence-list">
+                  {group.findings.map((occurrence, index) => (
+                    <div className="finding-occurrence" key={occurrence.id}>
+                      <p>
+                        <strong>Occurrence {index + 1}</strong>
+                        {occurrence.detail}
+                      </p>
+                      <button type="button" className="text-button compact" onClick={() => onFindingSelect(occurrence)}>
+                        Show affected path
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </article>
-        ))
+          );
+        })
       ) : (
         <p className="muted">
           {assessment.findings.length === 0
