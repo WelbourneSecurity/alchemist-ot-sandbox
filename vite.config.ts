@@ -3,6 +3,11 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // React 19 + @xyflow/react + lucide is a non-trivial bundle; warn if a
+    // chunk grows past this so a regression is visible in the build log.
+    chunkSizeWarningLimit: 900
+  },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"]

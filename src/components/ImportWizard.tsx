@@ -1,6 +1,7 @@
 import { FileUp, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectFormat, importFormatLabels, importTopology, type AssembledTopology, type ImportFormat } from "../import";
+import { oversizeWarning } from "../lib/modelLimits";
 
 interface ImportWizardProps {
   open: boolean;
@@ -188,6 +189,9 @@ export function ImportWizard({ open, onClose, onApply }: ImportWizardProps) {
             ) : null}
             {result.assets.length === 0 ? (
               <p className="muted">No assets were parsed; check the format selector matches the file.</p>
+            ) : null}
+            {oversizeWarning(result.assets.length, result.conduits.length) ? (
+              <p className="import-preview-oversize" role="status">{oversizeWarning(result.assets.length, result.conduits.length)}</p>
             ) : null}
 
             <fieldset className="import-mode">

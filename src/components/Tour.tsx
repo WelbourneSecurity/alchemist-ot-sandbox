@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { X } from "lucide-react";
+import { safeSetItem } from "../lib/safeStorage";
 
 interface TourStep {
   /** A CSS selector for the element to spotlight; omitted steps show a centred card. */
@@ -125,7 +126,7 @@ export function Tour({ open, onClose }: TourProps) {
   }
 
   function finish() {
-    window.localStorage.setItem(TOUR_SEEN_KEY, "1");
+    safeSetItem(TOUR_SEEN_KEY, "1");
     onClose();
   }
 
