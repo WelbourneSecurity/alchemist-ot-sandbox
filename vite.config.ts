@@ -9,7 +9,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 900
   },
   test: {
+    // Default to node so the engine tests keep their web-stream APIs; component
+    // tests opt into jsdom with a `// @vitest-environment jsdom` docblock.
     environment: "node",
-    include: ["src/**/*.test.ts"]
+    globals: true,
+    setupFiles: ["./vitest.setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"]
   }
 });
