@@ -68,9 +68,11 @@ interface AppProps {
   initialIntent?: "reference" | "methodology" | "tour";
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  /** Phone/tablet: the topology canvas is desktop-only, so the workspace renders read-only. */
+  isMobile?: boolean;
 }
 
-export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps) {
+export function App({ onGoHome, initialIntent, theme, onToggleTheme, isMobile = false }: AppProps) {
   const [project, setProject] = useState<OtProject>(() => loadStoredProject());
   const [history, setHistory] = useState<OtProject[]>([]);
   const [future, setFuture] = useState<OtProject[]>([]);
@@ -714,49 +716,63 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme }: AppProps)
           tabIndex={-1}
           className={`workspace-grid${layout.paletteOpen ? "" : " palette-collapsed"}${
             selectedAsset || selectedConduit ? "" : " inspector-hidden"
-          }`}
+          }${isMobile ? " mobile-readonly" : ""}`}
           style={{ "--dock-height": layout.dockOpen ? `${layout.dockHeight}rem` : "auto" } as CSSProperties}
           aria-label="OT network sandbox workspace"
         >
-          {layout.paletteOpen ? (
+          {isMobile ? null : layout.paletteOpen ? (
             <AssetPalette onAddAsset={addAsset} onCollapse={togglePalette} />
           ) : (
             <CollapsedRail panelClassName="asset-palette" label="Assets" side="left" onExpand={togglePalette} />
           )}
-          <TopologyCanvas
-            project={project}
-            assessment={assessment}
-            selectedId={selectedId}
-            highlightedConduitIds={highlightedConduitIds}
-            canvasMode={canvasMode}
-            layoutMode={layout.layoutMode}
-            connectMode={connectMode}
-            connectSourceId={connectSourceId}
-            canUndo={history.length > 0}
-            canRedo={future.length > 0}
-            onSelect={setSelectedId}
-            onAssetClick={handleAssetClick}
-            onCreateAsset={addAsset}
-            onCreateConduit={addConduit}
-            onProjectChange={commitProject}
-            onCanvasModeChange={(mode) => {
-              setCanvasMode(mode);
-              if (mode !== "risk") {
-                setActiveFindingId(null);
-              }
-            }}
-            onLayoutModeChange={setLayoutMode}
-            onManageSubnets={openSubnetManager}
-            onAutoArrange={autoArrangeLayout}
-            fitSignal={fitSignal}
-            onToggleConnectMode={handleToggleConnectMode}
-            onFindingSelect={handleFindingSelect}
-            onRenameAsset={renameAsset}
-            onSelectionChange={setMultiSelectedIds}
-            onUndo={undo}
-            onRedo={redo}
-          />
-          {selectedAsset || selectedConduit ? (
+          {isMobile ? (
+            <div className="canvas-mobile-notice" role="note">
+              <h2>Topology editing is desktop-only</h2>
+              <p>
+                Building and rearranging the network needs a larger screen and a pointer. Open Alchemist on a desktop to
+                edit the topology. Everything below — the assessment, findings, standards mapping and report — is fully
+                available here.
+              </p>
+              <p className="canvas-mobile-stats">
+                {project.assets.length} assets · {project.conduits.length} conduits · {assessment.findings.length} findings
+              </p>
+            </div>
+          ) : (
+            <TopologyCanvas
+              project={project}
+              assessment={assessment}
+              selectedId={selectedId}
+              highlightedConduitIds={highlightedConduitIds}
+              canvasMode={canvasMode}
+              layoutMode={layout.layoutMode}
+              connectMode={connectMode}
+              connectSourceId={connectSourceId}
+              canUndo={history.length > 0}
+              canRedo={future.length > 0}
+              onSelect={setSelectedId}
+              onAssetClick={handleAssetClick}
+              onCreateAsset={addAsset}
+              onCreateConduit={addConduit}
+              onProjectChange={commitProject}
+              onCanvasModeChange={(mode) => {
+                setCanvasMode(mode);
+                if (mode !== "risk") {
+                  setActiveFindingId(null);
+                }
+              }}
+              onLayoutModeChange={setLayoutMode}
+              onManageSubnets={openSubnetManager}
+              onAutoArrange={autoArrangeLayout}
+              fitSignal={fitSignal}
+              onToggleConnectMode={handleToggleConnectMode}
+              onFindingSelect={handleFindingSelect}
+              onRenameAsset={renameAsset}
+              onSelectionChange={setMultiSelectedIds}
+              onUndo={undo}
+              onRedo={redo}
+            />
+          )}
+          {!isMobile && (selectedAsset || selectedConduit) ? (
             <InspectorPanel
               project={project}
               asset={selectedAsset}
