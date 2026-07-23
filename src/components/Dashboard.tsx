@@ -122,7 +122,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
   if (isMobile) {
     return (
       <div className="dashboard site-frame dashboard-mobile-gate">
-        <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} />
+        <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} isMobile={isMobile} />
         <section className="page-hero hero-cta">
           <div className="hero-card">
             <canvas className="hero-dither" aria-hidden="true" />
@@ -146,7 +146,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
 
   return (
     <div className="dashboard site-frame">
-      <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} />
+      <SiteMasthead theme={theme} onToggleTheme={onToggleTheme} isMobile={isMobile} />
 
       <section className="page-hero hero-cta">
         <div className="hero-card">
