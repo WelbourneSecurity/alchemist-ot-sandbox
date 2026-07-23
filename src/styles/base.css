@@ -9,6 +9,13 @@ body,
   margin: 0;
 }
 
+/* Guard against stray horizontal overflow (mirrors the main site's
+   .page-shell { overflow: clip }). 100vw-derived widths include the
+   scrollbar on Windows, so clip rather than let the page pan. */
+body {
+  overflow-x: clip;
+}
+
 body {
   min-width: 320px;
   color: var(--text);
