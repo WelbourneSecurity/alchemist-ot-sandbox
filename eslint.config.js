@@ -29,16 +29,10 @@ export default tseslint.config(
       // modal resetting its step on open. Off until they stabilise.
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/refs": "off",
-      // Accessibility is enforced as warnings on this existing codebase: the
-      // gate stays green while the pre-existing findings (mostly redundant
-      // click-to-close backdrops that already close on Escape) are burned down
-      // separately. Correctness rules above remain errors and block merges.
-      "jsx-a11y/click-events-have-key-events": "warn",
-      "jsx-a11y/no-noninteractive-element-interactions": "warn",
-      "jsx-a11y/no-static-element-interactions": "warn",
-      "jsx-a11y/no-autofocus": "warn",
-      "jsx-a11y/interactive-supports-focus": "warn",
-      "jsx-a11y/no-noninteractive-tabindex": "warn",
+      // jsx-a11y recommended stays at its default (error): the pre-existing
+      // findings were fixed, so accessibility regressions now block merges.
+      // The few genuine pointer-only affordances (canvas drag, drop zones)
+      // carry scoped, justified per-line disables.
     },
   },
   // Test files: allow node + vitest globals.

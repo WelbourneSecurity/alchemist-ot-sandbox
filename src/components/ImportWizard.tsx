@@ -92,13 +92,18 @@ export function ImportWizard({ open, onClose, onApply }: ImportWizardProps) {
   };
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={close}>
+    <div
+      className="modal-overlay"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
+    >
       <div
         className="import-wizard"
         role="dialog"
         aria-modal="true"
         aria-label="Import network scan"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="import-wizard-head">
           <div>
@@ -131,6 +136,8 @@ export function ImportWizard({ open, onClose, onApply }: ImportWizardProps) {
         </label>
         <p className="import-wizard-hint">{FORMAT_HINTS[format]}</p>
 
+        {/* Drag-and-drop is inherently pointer-only; the "Choose file" button
+            inside is the keyboard/AT path to the same file input. */}
         <div
           className="import-dropzone"
           onDragOver={(event) => {

@@ -145,7 +145,7 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
             <input
               className="nodrag asset-node-rename"
               value={draft}
-              autoFocus
+              ref={(el) => el?.focus()}
               onChange={(event) => setDraft(event.target.value)}
               onBlur={commitRename}
               onClick={(event) => event.stopPropagation()}
@@ -161,6 +161,9 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
               }}
             />
           ) : (
+            // Double-click rename is a pointer affordance on the desktop-only
+            // canvas; the inspector panel offers the same rename with a field.
+             
             <strong
               className="asset-node-name"
               title={`${data.asset.name} — double-click to rename`}
@@ -560,6 +563,9 @@ function TopologyCanvasInner({
   );
 
   return (
+    // Drag-and-drop placement from the asset palette is pointer-only; adding
+    // assets also works via the palette's click buttons (desktop-only canvas).
+     
     <section
       className="canvas-shell"
       aria-label="Topology canvas"

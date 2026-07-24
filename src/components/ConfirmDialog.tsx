@@ -70,7 +70,17 @@ export function ConfirmDialog({
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    // Backdrop is decorative: keyboard users close with Escape (handled above),
+    // so the click-to-dismiss here needs no key handler. Closing only on a
+    // direct backdrop click removes the need for a stopPropagation handler on
+    // the dialog itself.
+    <div
+      className="modal-overlay"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
       <div
         className="confirm-dialog"
         ref={dialogRef}
@@ -78,7 +88,6 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        onClick={(event) => event.stopPropagation()}
       >
         <strong id="confirm-dialog-title">{title}</strong>
         <p id="confirm-dialog-message">{message}</p>

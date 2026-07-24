@@ -58,13 +58,12 @@ export function GovernanceEditor({ open, engagement, onClose, onSave }: Governan
   };
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="governance-editor"
         role="dialog"
         aria-modal="true"
         aria-label="Engagement context"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="governance-editor-head">
           <div>
