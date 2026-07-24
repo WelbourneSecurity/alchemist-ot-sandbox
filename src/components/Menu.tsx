@@ -77,6 +77,7 @@ export function Menu({ label, items, icon, align = "right", title }: MenuProps) 
         <div
           className={`menu-panel menu-panel-${align}`}
           role="menu"
+          tabIndex={-1}
           ref={panelRef}
           onKeyDown={(event) => {
             if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {

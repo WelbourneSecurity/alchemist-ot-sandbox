@@ -38,13 +38,12 @@ export function SubnetManager({ open, subnets, assets, onClose, onAdd, onUpdate,
   const memberCount = (subnetId: string) => assets.filter((asset) => asset.subnetId === subnetId).length;
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="subnet-manager"
         role="dialog"
         aria-modal="true"
         aria-label="Manage subnets"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="subnet-manager-head">
           <div>

@@ -48,13 +48,12 @@ export function MethodologyPanel({ open, onClose }: MethodologyPanelProps) {
   );
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="knowledge-base methodology"
         role="dialog"
         aria-modal="true"
         aria-label="Methodology"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="kb-head">
           <div>

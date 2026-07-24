@@ -74,14 +74,12 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
   };
 
   return (
-    <div className="modal-overlay command-overlay" onClick={onClose}>
+    <div className="modal-overlay command-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="command-palette"
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={handleKeyDown}
       >
         <input
           ref={inputRef}
@@ -90,6 +88,7 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
           placeholder="Search commands…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleKeyDown}
           role="combobox"
           aria-expanded
           aria-controls="command-list"
@@ -100,6 +99,10 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
             <li className="command-empty">No matching commands</li>
           ) : (
             filtered.map((command, index) => (
+              // Keyboard selection is the combobox pattern: the input's onKeyDown
+              // drives activedescendant + Enter to run; this click is the mouse
+              // equivalent, so the option needs no key handler of its own.
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
               <li
                 key={command.id}
                 id={`command-${command.id}`}

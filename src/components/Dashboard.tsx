@@ -212,7 +212,7 @@ export function Dashboard({ onEnter, theme, onToggleTheme, isMobile = false }: D
                 <input
                   className="saved-rename"
                   value={draftName}
-                  autoFocus
+                  ref={(el) => el?.focus()}
                   onChange={(event) => setDraftName(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {

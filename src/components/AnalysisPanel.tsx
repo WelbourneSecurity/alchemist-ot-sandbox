@@ -204,6 +204,8 @@ export function AnalysisPanel({
   return (
     <section className={`analysis-panel${dockOpen ? "" : " is-collapsed"}`} aria-label="Analysis">
       {dockOpen ? (
+        // WAI-ARIA window-splitter: a focusable separator with keyboard resize.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           className="dock-resize-handle"
           role="separator"
@@ -212,6 +214,10 @@ export function AnalysisPanel({
           aria-valuenow={Math.round(dockHeight)}
           aria-valuemin={DOCK_MIN}
           aria-valuemax={DOCK_MAX}
+          // WAI-ARIA window-splitter pattern: a focusable separator with
+          // keyboard resize (handleResizeKeyDown). The rule treats separator as
+          // non-interactive, but a resizable splitter is meant to be focusable.
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
           tabIndex={0}
           onPointerDown={handleResizePointerDown}
           onPointerMove={handleResizePointerMove}
@@ -229,6 +235,9 @@ export function AnalysisPanel({
         >
           {dockOpen ? <ChevronDown size={15} aria-hidden="true" /> : <ChevronUp size={15} aria-hidden="true" />}
         </button>
+        {/* ARIA tablist roving-tabindex pattern: the container handles arrow-key
+            navigation; the individual tabs carry tabIndex. */}
+        {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus */}
         <div className="tabs" role="tablist" aria-label="Analysis views" onKeyDown={handleTabKeyDown}>
           {TAB_GROUPS.map((group) => (
             <div className="tab-group" key={group.label}>
@@ -267,6 +276,9 @@ export function AnalysisPanel({
           role="tabpanel"
           id="analysis-tabpanel"
           aria-labelledby={`analysis-tab-${activeTab}`}
+          // WAI-ARIA recommends a focusable tabpanel (tabIndex 0) so keyboard
+          // users can reach scrollable panel content.
+           
           tabIndex={0}
         >
           {activeTab === "reachability" ? (

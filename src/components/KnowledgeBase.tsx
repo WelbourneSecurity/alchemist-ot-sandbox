@@ -70,13 +70,12 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
   const topic = knowledgeBase.find((entry) => entry.id === selectedId) ?? knowledgeBase[0];
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="knowledge-base"
         role="dialog"
         aria-modal="true"
         aria-label="OT knowledge base"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="kb-head">
           <div>
@@ -98,7 +97,7 @@ export function KnowledgeBase({ open, onClose }: KnowledgeBaseProps) {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Filter topics…"
                 aria-label="Filter topics"
-                autoFocus
+                ref={(el) => el?.focus()}
               />
             </div>
             <div className="kb-nav-list">

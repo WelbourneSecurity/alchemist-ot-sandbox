@@ -34,13 +34,12 @@ export function ScenarioGallery({ open, scenarios, onClose, onLoad }: ScenarioGa
   }
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="scenario-gallery"
         role="dialog"
         aria-modal="true"
         aria-label="Sector scenarios"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="scenario-gallery-head">
           <div>

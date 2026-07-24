@@ -38,13 +38,12 @@ export function ShortcutsOverlay({ open, onClose }: ShortcutsOverlayProps) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         className="shortcuts-overlay"
         role="dialog"
         aria-modal="true"
         aria-labelledby="shortcuts-title"
-        onClick={(event) => event.stopPropagation()}
       >
         <strong id="shortcuts-title">Keyboard shortcuts</strong>
         <dl className="shortcuts-list">
