@@ -730,8 +730,8 @@ export function App({ onGoHome, initialIntent, theme, onToggleTheme, isMobile = 
               <h2>Topology editing is desktop-only</h2>
               <p>
                 Building and rearranging the network needs a larger screen and a pointer. Open Alchemist on a desktop to
-                edit the topology. Everything below — the assessment, findings, standards mapping and report — is fully
-                available here.
+                edit the topology. Everything below is fully available here: the assessment, findings, standards mapping
+                and report.
               </p>
               <p className="canvas-mobile-stats">
                 {project.assets.length} assets · {project.conduits.length} conduits · {assessment.findings.length} findings
