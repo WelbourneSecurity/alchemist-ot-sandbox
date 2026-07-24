@@ -347,6 +347,9 @@ function TopologyCanvasInner({
         id: asset.id,
         type: "asset",
         position: purduePositions?.get(asset.id) ?? asset.position,
+        // Announced to screen readers on the focusable node wrapper; the
+        // frame's keyboard handler adds Enter to select and arrows to move.
+        ariaLabel: `${asset.name}, ${getAssetType(asset.type).label}, ${getZone(asset.zone).name}. Press Enter to select, arrow keys to move.`,
         width: ASSET_NODE_WIDTH,
         height: ASSET_NODE_HEIGHT,
         style: {
@@ -562,6 +565,42 @@ function TopologyCanvasInner({
     [onSelectionChange]
   );
 
+  // Keyboard operability for the canvas. React Flow makes each node's wrapper
+  // focusable (tabIndex 0) but wires no activation; this reads the focused
+  // node from the event target and routes Enter/Space through the same
+  // onAssetClick as a pointer click (select, or pick a connect endpoint), and
+  // moves the asset with the arrow keys in the free network view.
+  const NUDGE = CANVAS_GRID_X;
+  const handleCanvasKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const nodeEl = (event.target as HTMLElement)?.closest?.(".react-flow__node");
+      const id = nodeEl?.getAttribute("data-id");
+      if (!id) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onAssetClick(id);
+        return;
+      }
+      if (isPurdue) return;
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-NUDGE, 0],
+        ArrowRight: [NUDGE, 0],
+        ArrowUp: [0, -NUDGE],
+        ArrowDown: [0, NUDGE]
+      };
+      const move = delta[event.key];
+      if (!move) return;
+      event.preventDefault();
+      onProjectChange((current) => ({
+        ...current,
+        assets: current.assets.map((asset) =>
+          asset.id === id ? { ...asset, position: { x: asset.position.x + move[0], y: asset.position.y + move[1] } } : asset
+        )
+      }));
+    },
+    [NUDGE, isPurdue, onAssetClick, onProjectChange]
+  );
+
   return (
     // Drag-and-drop placement from the asset palette is pointer-only; adding
     // assets also works via the palette's click buttons (desktop-only canvas).
@@ -668,7 +707,8 @@ function TopologyCanvasInner({
         </div>
       </div>
 
-      <div className={`react-flow-frame mode-${canvasMode} ${isDragging ? "is-dragging" : ""}`}>
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div className={`react-flow-frame mode-${canvasMode} ${isDragging ? "is-dragging" : ""}`} onKeyDown={handleCanvasKeyDown}>
         {connectMode ? (
           <div className="canvas-connect-banner" role="status">
             {connectSourceId ? "Click a target asset to wire the conduit" : "Click a source asset to start a conduit"}
