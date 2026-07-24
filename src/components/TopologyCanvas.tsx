@@ -166,7 +166,7 @@ function AssetNode({ data }: NodeProps<AssetFlowNode>) {
              
             <strong
               className="asset-node-name"
-              title={`${data.asset.name} — double-click to rename`}
+              title={`${data.asset.name} (double-click to rename)`}
               onDoubleClick={(event) => {
                 event.stopPropagation();
                 setDraft(data.asset.name);
